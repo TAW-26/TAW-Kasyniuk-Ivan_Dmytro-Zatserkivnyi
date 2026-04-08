@@ -14,7 +14,12 @@ app.use(express.json());
 
 // routes
 const authRoutes = require("./routes/auth");
+const listingRoutes = require("./routes/listings");
+const categoryRoutes = require("./routes/categories");
+
 app.use("/api/auth", authRoutes);
+app.use("/api/listings", listingRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.get("/", (req, res) => {
   res.send("API działa");
