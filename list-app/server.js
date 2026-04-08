@@ -12,14 +12,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// routes
 const authRoutes = require("./routes/auth");
 const listingRoutes = require("./routes/listings");
 const categoryRoutes = require("./routes/categories");
+const adminRoutes = require("./routes/admin");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.send("API działa");
