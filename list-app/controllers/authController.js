@@ -6,8 +6,12 @@ exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Wszystkie pola są wymagane" });
+    }
+
     const userExist = await User.findOne({ email });
-    if (userExist) return res.status(400).json("User already exists");
+    if (userExist) return res.status(400).json({ message: "Użytkownik już istnieje" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -17,19 +21,26 @@ exports.register = async (req, res) => {
       password: hashedPassword,
     });
 
-    res.json(user);
+    const { password: _, ...userWithoutPassword } = user.toObject();
+    res.status(201).json(userWithoutPassword);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: "Błąd serwera" });
   }
 };
 
 exports.login = async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user) return res.status(404).json("User not found");
+    const { email, password } = req.body;
 
-    const valid = await bcrypt.compare(req.body.password, user.password);
-    if (!valid) return res.status(400).json("Wrong password");
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email i hasło są wymagane" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ message: "Nieprawidłowe hasło" });
 
     const token = jwt.sign(
       { id: user._id },
@@ -37,8 +48,9 @@ exports.login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ user, token });
+    const { password: _, ...userWithoutPassword } = user.toObject();
+    res.json({ user: userWithoutPassword, token });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: "Błąd serwera: " });
   }
 };
