@@ -23,7 +23,7 @@ cd TAW-Kasyniuk-Ivan_Dmytro-Zatserkivnyi
 ### 2. Backend
 
 ```bash
-cd list-app
+cd backend
 npm install
 cp .env.example .env   # uzupelnij MONGO_URI i JWT_SECRET
 npm run seed            # inicjalizacja bazy (admin, kategorie, przykladowe ogloszenia)
@@ -49,7 +49,7 @@ ng serve                # http://localhost:4200
 ## Struktura projektu
 
 ```
-list-app/
+backend/
 ├── config/
 │   └── db.js                    # polaczenie z MongoDB
 ├── controllers/
