@@ -9,11 +9,9 @@ const {
   getByUser,
 } = require("../controllers/listingController");
 
-// Publiczne
 router.get("/", getAll);
 router.get("/:id", getOne);
 
-// Wymagają autoryzacji
 router.post("/", auth, create);
 router.put("/:id", auth, update);
 router.delete("/:id", auth, remove);

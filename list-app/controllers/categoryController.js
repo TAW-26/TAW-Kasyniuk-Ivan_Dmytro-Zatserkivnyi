@@ -1,6 +1,5 @@
 const Category = require("../models/Category");
 
-// Pobierz wszystkie kategorie
 exports.getAll = async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
@@ -10,7 +9,6 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// Utwórz kategorię (tylko admin)
 exports.create = async (req, res) => {
   try {
     const { name } = req.body;
@@ -27,7 +25,24 @@ exports.create = async (req, res) => {
   }
 };
 
-// Usuń kategorię (tylko admin)
+exports.update = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name) return res.status(400).json({ message: "Nazwa kategorii jest wymagana" });
+
+    const exists = await Category.findOne({ name, _id: { $ne: req.params.id } });
+    if (exists) return res.status(400).json({ message: "Kategoria o tej nazwie już istnieje" });
+
+    const category = await Category.findByIdAndUpdate(req.params.id, { name }, { new: true });
+    if (!category) return res.status(404).json({ message: "Kategoria nie znaleziona" });
+
+    res.json(category);
+  } catch (err) {
+    res.status(500).json({ message: "Błąd serwera" });
+  }
+};
+
 exports.remove = async (req, res) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);
