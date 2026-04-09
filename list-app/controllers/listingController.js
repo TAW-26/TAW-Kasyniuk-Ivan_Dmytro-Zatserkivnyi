@@ -1,6 +1,5 @@
 const Listing = require("../models/Listing");
 
-// Pobierz wszystkie ogłoszenia (z filtrowaniem i wyszukiwaniem)
 exports.getAll = async (req, res) => {
   try {
     const { search, category, status, sort } = req.query;
@@ -31,7 +30,6 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// Pobierz jedno ogłoszenie
 exports.getOne = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id)
@@ -46,7 +44,6 @@ exports.getOne = async (req, res) => {
   }
 };
 
-// Utwórz ogłoszenie
 exports.create = async (req, res) => {
   try {
     const { title, description, price, location, category_id } = req.body;
@@ -70,7 +67,6 @@ exports.create = async (req, res) => {
   }
 };
 
-// Zaktualizuj ogłoszenie
 exports.update = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -88,7 +84,6 @@ exports.update = async (req, res) => {
   }
 };
 
-// Usuń ogłoszenie
 exports.remove = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -106,7 +101,6 @@ exports.remove = async (req, res) => {
   }
 };
 
-// Ogłoszenia użytkownika
 exports.getByUser = async (req, res) => {
   try {
     const listings = await Listing.find({ user_id: req.user.id })
