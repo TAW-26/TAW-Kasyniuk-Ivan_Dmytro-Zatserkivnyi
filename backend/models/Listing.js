@@ -8,6 +8,8 @@ const listingSchema = new mongoose.Schema({
   category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   status: { type: String, enum: ["active", "inactive", "sold"], default: "active" },
+  images: { type: [String], default: [] },
+  buyer_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Listing", listingSchema);

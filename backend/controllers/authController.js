@@ -24,6 +24,7 @@ exports.register = async (req, res) => {
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.status(201).json(userWithoutPassword);
   } catch (err) {
+    console.error("[register] error:", err);
     res.status(500).json({ message: "Błąd serwera" });
   }
 };
@@ -51,6 +52,46 @@ exports.login = async (req, res) => {
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.json({ user: userWithoutPassword, token });
   } catch (err) {
-    res.status(500).json({ message: "Błąd serwera: " });
+    console.error("[login] error:", err);
+    res.status(500).json({ message: "Błąd serwera" });
+  }
+};
+
+exports.me = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+    res.json(user);
+  } catch (err) {
+    console.error("[me] error:", err);
+    res.status(500).json({ message: "Błąd serwera" });
+  }
+};
+
+exports.updateMe = async (req, res) => {
+  try {
+    const allowed = ["username", "phone"];
+    const updates = {};
+    for (const key of allowed) {
+      if (key in req.body && typeof req.body[key] === "string") {
+        updates[key] = req.body[key].trim();
+      }
+    }
+
+    if (updates.username !== undefined && updates.username.length < 2) {
+      return res.status(400).json({ message: "Imię i nazwisko musi mieć min. 2 znaki" });
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+
+    res.json(user);
+  } catch (err) {
+    console.error("[updateMe] error:", err);
+    res.status(500).json({ message: "Błąd serwera" });
   }
 };
