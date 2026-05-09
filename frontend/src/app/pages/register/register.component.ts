@@ -2,8 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { RegisterResponse } from '../../core/models/user.model';
 
 const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
   const password = group.get('password')?.value;
@@ -14,7 +19,14 @@ const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .auth-wrapper {
@@ -22,28 +34,27 @@ const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+      background: var(--bg);
       padding: 2rem 1rem;
     }
 
     .auth-card {
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
+      box-shadow: none;
       width: 100%;
       max-width: 460px;
       padding: 2.5rem;
     }
 
     .logo {
+      display: block;
       font-size: 1.75rem;
       font-weight: 700;
       text-align: center;
       margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: var(--primary);
     }
 
     .subtitle {
@@ -54,8 +65,9 @@ const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
     }
 
     .form-error {
-      background: #fee2e2;
-      color: #991b1b;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
       padding: 0.625rem 0.75rem;
       border-radius: var(--radius);
       margin-bottom: 1rem;
@@ -81,63 +93,80 @@ const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
   template: `
     <div class="auth-wrapper">
       <div class="auth-card">
-        <div class="logo">LokalneOgłoszenia</div>
+        <a class="logo" routerLink="/">Bazarek</a>
         <p class="subtitle">Załóż konto za darmo</p>
+
+        @if (emailSent()) {
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem;text-align:center;">
+            <strong>Sprawdź swoją skrzynkę pocztową</strong>
+            <p style="margin:0.5rem 0 0;color:var(--gray-600);font-size:0.875rem;">
+              Wysłaliśmy link weryfikacyjny na <strong>{{ registeredEmail() }}</strong>.
+              Potwierdź konto, a następnie zaloguj się.
+            </p>
+            <a routerLink="/login" style="display:inline-block;margin-top:1rem;color:var(--primary);font-weight:600;">Przejdź do logowania</a>
+          </div>
+        } @else {
 
         @if (errorMessage()) {
           <div class="form-error">{{ errorMessage() }}</div>
         }
 
         <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
-          <div class="form-group">
-            <label for="username">Imię i nazwisko</label>
-            <input id="username" name="register-username" type="text" formControlName="username" placeholder="Jan Kowalski" autocomplete="off" />
+          <mat-form-field appearance="outline">
+            <mat-label>Imię i nazwisko</mat-label>
+            <input matInput type="text" formControlName="username" placeholder="Jan Kowalski" autocomplete="off" />
             @if (showError('username', 'required')) {
-              <span class="error-text">Imię i nazwisko jest wymagane</span>
+              <mat-error>Imię i nazwisko jest wymagane</mat-error>
             }
             @if (showError('username', 'minlength')) {
-              <span class="error-text">Min. 2 znaki</span>
+              <mat-error>Min. 2 znaki</mat-error>
             }
-          </div>
+          </mat-form-field>
 
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" name="register-email" type="email" formControlName="email" placeholder="jan@example.com" autocomplete="off" />
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="jan@example.com" autocomplete="off" />
             @if (showError('email', 'required')) {
-              <span class="error-text">Email jest wymagany</span>
+              <mat-error>Email jest wymagany</mat-error>
             }
             @if (showError('email', 'email')) {
-              <span class="error-text">Nieprawidłowy format email</span>
+              <mat-error>Nieprawidłowy format email</mat-error>
             }
-          </div>
+          </mat-form-field>
 
-          <div class="form-group">
-            <label for="password">Hasło</label>
-            <input id="password" name="register-password" type="password" formControlName="password" placeholder="••••••••" autocomplete="new-password" />
+          <mat-form-field appearance="outline">
+            <mat-label>Hasło</mat-label>
+            <input matInput type="password" formControlName="password" placeholder="••••••••" autocomplete="new-password" />
             @if (showError('password', 'required')) {
-              <span class="error-text">Hasło jest wymagane</span>
+              <mat-error>Hasło jest wymagane</mat-error>
             }
             @if (showError('password', 'minlength')) {
-              <span class="error-text">Min. 6 znaków</span>
+              <mat-error>Min. 6 znaków</mat-error>
             }
-          </div>
+          </mat-form-field>
 
-          <div class="form-group">
-            <label for="confirmPassword">Powtórz hasło</label>
-            <input id="confirmPassword" name="register-confirm-password" type="password" formControlName="confirmPassword" placeholder="••••••••" autocomplete="new-password" />
+          <mat-form-field appearance="outline">
+            <mat-label>Powtórz hasło</mat-label>
+            <input matInput type="password" formControlName="confirmPassword" placeholder="••••••••" autocomplete="new-password" />
             @if (form.hasError('passwordsMismatch') && form.controls.confirmPassword.touched) {
-              <span class="error-text">Hasła nie są takie same</span>
+              <mat-error>Hasła nie są takie same</mat-error>
             }
-          </div>
+          </mat-form-field>
 
-          <button class="btn btn-primary btn-block" type="submit" [disabled]="loading()">
-            {{ loading() ? 'Tworzenie konta...' : 'Załóż konto' }}
+          <button mat-flat-button color="primary" type="submit" [disabled]="loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+            } @else {
+              Załóż konto
+            }
           </button>
         </form>
 
         <div class="auth-footer">
           Masz już konto? <a routerLink="/login">Zaloguj się</a>
         </div>
+
+        }
       </div>
     </div>
   `,
@@ -150,6 +179,8 @@ export class RegisterComponent {
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly emailSent = signal(false);
+  protected readonly registeredEmail = signal('');
 
   protected readonly form = this.fb.nonNullable.group(
     {
@@ -178,7 +209,13 @@ export class RegisterComponent {
     const { username, email, password } = this.form.getRawValue();
 
     this.auth.register({ username, email, password }).subscribe({
-      next: () => {
+      next: (res: RegisterResponse) => {
+        if (res.requiresVerification) {
+          this.loading.set(false);
+          this.registeredEmail.set(email);
+          this.emailSent.set(true);
+          return;
+        }
         this.auth.login({ email, password }).subscribe({
           next: () => {
             this.loading.set(false);

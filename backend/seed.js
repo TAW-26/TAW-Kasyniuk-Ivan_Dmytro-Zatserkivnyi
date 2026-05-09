@@ -93,7 +93,6 @@ async function seed() {
     console.log("Seed completed");
     process.exit(0);
   } catch (err) {
-    console.error("Seed error:", err.message);
     process.exit(1);
   }
 }

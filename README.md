@@ -1,8 +1,37 @@
-# Inteligentny system ogloszen lokalnych
+# Bazarek — Inteligentny system ogłoszeń lokalnych
 
-Aplikacja webowa umozliwiajaca publikowanie i przegladanie ogloszen lokalnych.
+Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowanym czatem, panelem administratora oraz trybem ciemnym.
 
 **Autorzy:** Ivan Kasyniuk (37696), Dmytro Zatserkivnyi (37751)
+
+## Funkcjonalności
+
+- Rejestracja i logowanie (JWT access token 15 min + refresh token 7 dni w httpOnly cookie)
+- Weryfikacja email przy rejestracji (auto-weryfikacja w trybie dev; w produkcji link na maila)
+- Ogłoszenia: dodawanie, edycja, usuwanie, wyszukiwanie, filtrowanie (kategoria, lokalizacja, cena), sortowanie i paginacja
+- Właściciel oznacza ogłoszenie jako sprzedane (`/mark-sold`)
+- Przycisk „Chcę kupić" otwiera czat z pre-wypełnioną wiadomością do sprzedawcy
+- Kategorie (CRUD — tylko administrator)
+- Ulubione ogłoszenia (synchronizowane z bazą danych dla zalogowanych; localStorage dla gości)
+- Czat 1-na-1 z licznikiem nieprzeczytanych i automatyczną odpowiedzią przy pierwszej wiadomości
+- Profil użytkownika z avatarem (PNG/JPG/WebP, max 2 MB)
+- Ustawienia konta: zmiana hasła (unieważnia wszystkie sesje), usunięcie konta, przełącznik motywu
+- Panel administratora: zarządzanie użytkownikami, rolami i ogłoszeniami
+
+## Bezpieczeństwo
+
+| Środek | Opis |
+|--------|------|
+| Access token 15 min | Krótki czas życia ogranicza skutki wycieku |
+| Refresh token httpOnly cookie | JS nie może odczytać tokenu odświeżającego |
+| Auto-refresh w interceptorze | 401 → cicha wymiana tokenu, użytkownik nie zauważa |
+| Unieważnienie refresh token | Logout i zmiana hasła usuwają token z bazy |
+| Rate limiting | Max 10 prób logowania / rejestracji na 15 min |
+| Email weryfikacja | Konto blokowane do potwierdzenia (produkcja) |
+| Email sprzedawcy ukryty | API nie zwraca emaila w publicznych endpointach |
+| Walidacja zdjęć | Max 5 zdjęć, max 2 MB każde |
+| Oznaczanie jako sprzedane | Tylko właściciel (nie kupujący) |
+| Walidacja ObjectId | Endpointy z parametrem ID weryfikują format MongoDB ObjectId |
 
 ## Wymagania
 
@@ -10,6 +39,21 @@ Aplikacja webowa umozliwiajaca publikowanie i przegladanie ogloszen lokalnych.
 - npm >= 9
 - Angular CLI >= 17 → `npm install -g @angular/cli`
 - MongoDB (lokalnie lub Atlas)
+
+### Zmienne środowiskowe (`backend/.env`)
+
+| Zmienna              | Opis                                                    | Wymagana |
+|----------------------|---------------------------------------------------------|----------|
+| `MONGO_URI`          | Connection string do MongoDB                            | tak      |
+| `JWT_SECRET`         | Sekret do podpisywania access tokenów                   | tak      |
+| `JWT_REFRESH_SECRET` | Sekret do podpisywania refresh tokenów                  | tak      |
+| `PORT`               | Port serwera (domyślnie `5000`)                         | nie      |
+| `FRONTEND_URL`       | Adres frontendu dla CORS (wymagany w produkcji)         | prod     |
+| `NODE_ENV`           | `production` włącza weryfikację email i secure cookies  | nie      |
+
+> Serwer nie uruchomi się bez `MONGO_URI`, `JWT_SECRET` i `JWT_REFRESH_SECRET`. W trybie `production` wymagany jest też `FRONTEND_URL`.
+
+Wzór: `backend/env.example` (skopiuj do `backend/.env`).
 
 ## Uruchomienie
 
@@ -25,9 +69,11 @@ cd TAW-Kasyniuk-Ivan_Dmytro-Zatserkivnyi
 ```bash
 cd backend
 npm install
-cp .env.example .env   # uzupelnij MONGO_URI i JWT_SECRET
-npm run seed            # inicjalizacja bazy (admin, kategorie, przykladowe ogloszenia)
-npm run dev             # http://localhost:5000
+cp env.example .env     # uzupełnij MONGO_URI, JWT_SECRET, JWT_REFRESH_SECRET
+npm run seed            # inicjalizacja bazy (admin, kategorie, przykładowe ogłoszenia)
+npm run dev             # http://localhost:5000 (nodemon)
+# alternatywnie:
+# npm start             # bez nodemon
 ```
 
 ### 3. Frontend
@@ -35,114 +81,159 @@ npm run dev             # http://localhost:5000
 ```bash
 cd frontend
 npm install
-ng serve                # http://localhost:4200
+npx ng serve            # http://localhost:4200
 ```
+
+> Frontend korzysta z proxy (`proxy.conf.json`) — zapytania `/api/*` są przekierowywane do `http://localhost:5000`. Nie ma potrzeby ręcznej konfiguracji CORS w przeglądarce.
 
 ## Technologie
 
-| Warstwa      | Technologie                              |
-|--------------|------------------------------------------|
-| Frontend     | Angular 17, TypeScript, Angular Material |
-| Backend      | Node.js, Express, JWT, Mongoose          |
-| Baza danych  | MongoDB (Atlas)                          |
+| Warstwa      | Technologie                                                              |
+|--------------|--------------------------------------------------------------------------|
+| Frontend     | Angular 17 (standalone, signals, OnPush), TypeScript, Angular Material   |
+| Backend      | Node.js, Express 5, JWT, Mongoose, bcrypt, cookie-parser, express-rate-limit |
+| Baza danych  | MongoDB (Atlas lub lokalnie)                                             |
 
 ## Struktura projektu
 
 ```
 backend/
 ├── config/
-│   └── db.js                    # polaczenie z MongoDB
+│   └── db.js                    # połączenie z MongoDB
 ├── controllers/
-│   ├── authController.js        # rejestracja i logowanie
-│   ├── listingController.js     # CRUD ogloszen, wyszukiwanie, filtrowanie
-│   ├── categoryController.js    # CRUD kategorii
-│   └── adminController.js       # zarzadzanie uzytkownikami i rolami
+│   ├── authController.js        # rejestracja, logowanie, refresh, logout,
+│   │                            # weryfikacja email, profil, zmiana hasła,
+│   │                            # usuwanie konta, ulubione
+│   ├── listingController.js     # CRUD ogłoszeń, walidacja zdjęć, mark-sold,
+│   │                            # filtrowanie (minPrice, maxPrice, location, ids)
+│   ├── categoryController.js    # CRUD kategorii (tylko admin)
+│   ├── messageController.js     # czat: rozmowy, wiadomości, auto-reply, licznik
+│   └── adminController.js       # zarządzanie użytkownikami i rolami
 ├── middleware/
-│   ├── authMiddleware.js        # weryfikacja tokenow JWT
-│   └── adminMiddleware.js       # weryfikacja roli administratora
+│   ├── authMiddleware.js        # weryfikacja JWT (401 TOKEN_EXPIRED / 403 invalid)
+│   ├── adminMiddleware.js       # weryfikacja roli administratora
+│   └── errorHandler.js         # globalny handler błędów
 ├── models/
-│   ├── User.js                  # schemat uzytkownika
-│   ├── Listing.js               # schemat ogloszenia
-│   └── Category.js              # schemat kategorii
+│   ├── User.js                  # użytkownik (avatar, telefon, rola, isVerified,
+│   │                            # refreshToken, favorites[])
+│   ├── Listing.js               # ogłoszenie
+│   ├── Category.js              # kategoria
+│   └── Message.js               # wiadomość czatu
 ├── routes/
-│   ├── auth.js                  # endpointy autoryzacji
-│   ├── listings.js              # endpointy ogloszen
+│   ├── auth.js                  # endpointy autoryzacji (z rate limiterem)
+│   ├── listings.js              # endpointy ogłoszeń
 │   ├── categories.js            # endpointy kategorii
+│   ├── messages.js              # endpointy czatu
 │   └── admin.js                 # endpointy panelu admina
-├── seed.js                      # skrypt inicjalizujacy baze danych
-├── server.js                    # glowny plik serwera
+├── seed.js                      # skrypt inicjalizujący bazę danych
+├── server.js                    # główny plik serwera
 └── package.json
+
+frontend/src/app/
+├── core/
+│   ├── interceptors/auth.interceptor.ts  # dodaje token, auto-refresh przy 401
+│   ├── models/                           # interfejsy TypeScript
+│   └── services/                        # auth, listing, messages, favorites, ...
+├── layout/                      # main-layout z menu i nagłówkiem
+├── pages/                       # ads, ad-detail, add-ad, favorites, home,
+│                                # login, messages, profile, register, settings
+└── shared/                      # komponenty współdzielone (ad-card, stats-mini, ...)
 ```
 
 ## API Endpoints
 
-### Auth
+### Auth i konto
 
-| Metoda | Endpoint              | Opis                      | Dostep   |
-|--------|-----------------------|---------------------------|----------|
-| POST   | `/api/auth/register`  | Rejestracja uzytkownika   | publiczny |
-| POST   | `/api/auth/login`     | Logowanie (zwraca JWT)    | publiczny |
+| Metoda | Endpoint                          | Opis                                                   | Dostęp    |
+|--------|-----------------------------------|--------------------------------------------------------|-----------|
+| POST   | `/api/auth/register`              | Rejestracja (rate limited, auto-weryfikacja w dev)     | publiczny |
+| POST   | `/api/auth/login`                 | Logowanie → `accessToken` + httpOnly refresh cookie    | publiczny |
+| POST   | `/api/auth/refresh`               | Wymiana refresh tokenu na nowy access token            | cookie    |
+| POST   | `/api/auth/logout`                | Wylogowanie (usuwa refresh token z bazy i cookie)      | cookie    |
+| GET    | `/api/auth/verify/:token`         | Weryfikacja adresu email                               | publiczny |
+| GET    | `/api/auth/me`                    | Profil zalogowanego użytkownika (z listą favorites)    | JWT       |
+| PUT    | `/api/auth/me`                    | Aktualizacja profilu (username, telefon, avatar)       | JWT       |
+| PUT    | `/api/auth/me/password`           | Zmiana hasła (unieważnia wszystkie sesje)              | JWT       |
+| DELETE | `/api/auth/me`                    | Usunięcie konta (wraz z ogłoszeniami i wiadomościami)  | JWT       |
+| POST   | `/api/auth/favorites/toggle/:id`  | Dodanie / usunięcie ogłoszenia z ulubionych            | JWT       |
+| DELETE | `/api/auth/favorites`             | Wyczyszczenie wszystkich ulubionych                    | JWT       |
 
-### Listings (Ogloszenia)
+### Listings (Ogłoszenia)
 
-| Metoda | Endpoint                 | Opis                          | Dostep       |
-|--------|--------------------------|-------------------------------|--------------|
-| GET    | `/api/listings`          | Lista ogloszen (filtrowanie, sortowanie) | publiczny |
-| GET    | `/api/listings/:id`      | Szczegoly ogloszenia          | publiczny    |
-| GET    | `/api/listings/user/my`  | Ogloszenia zalogowanego usera | JWT          |
-| POST   | `/api/listings`          | Dodanie ogloszenia            | JWT          |
-| PUT    | `/api/listings/:id`      | Edycja ogloszenia (wlasciciel)| JWT          |
-| DELETE | `/api/listings/:id`      | Usuniecie (wlasciciel/admin)  | JWT          |
+| Metoda | Endpoint                        | Opis                                                      | Dostęp    |
+|--------|---------------------------------|-----------------------------------------------------------|-----------|
+| GET    | `/api/listings`                 | Lista z filtrami: `search`, `category`, `status`, `sort`, `page`, `limit`, `minPrice`, `maxPrice`, `location`, `ids` | publiczny |
+| GET    | `/api/listings/:id`             | Szczegóły ogłoszenia (email sprzedawcy ukryty)            | publiczny |
+| GET    | `/api/listings/user/my`         | Ogłoszenia zalogowanego użytkownika                       | JWT       |
+| POST   | `/api/listings`                 | Dodanie ogłoszenia (max 5 zdjęć, max 2 MB)               | JWT       |
+| POST   | `/api/listings/:id/mark-sold`   | Oznaczenie jako sprzedane (tylko właściciel)              | JWT       |
+| PUT    | `/api/listings/:id`             | Edycja (właściciel lub admin)                             | JWT       |
+| DELETE | `/api/listings/:id`             | Usunięcie (właściciel lub admin)                          | JWT       |
 
-### Categories (Kategorie)
+**Parametry filtrowania GET `/api/listings`:**
 
-| Metoda | Endpoint                | Opis                  | Dostep    |
-|--------|-------------------------|-----------------------|-----------|
-| GET    | `/api/categories`       | Lista kategorii       | publiczny |
-| POST   | `/api/categories`       | Dodanie kategorii     | JWT       |
-| PUT    | `/api/categories/:id`   | Edycja kategorii      | JWT       |
-| DELETE | `/api/categories/:id`   | Usuniecie kategorii   | JWT       |
+| Parametr    | Typ    | Opis                                          |
+|-------------|--------|-----------------------------------------------|
+| `search`    | string | Wyszukiwanie w tytule i opisie                |
+| `category`  | string | ID kategorii                                  |
+| `status`    | string | `active` \| `inactive` \| `sold`              |
+| `sort`      | string | `price_asc` \| `price_desc`                   |
+| `page`      | number | Numer strony (domyślnie `1`)                  |
+| `limit`     | number | Wyników na stronę (domyślnie `20`)            |
+| `minPrice`  | number | Minimalna cena                                |
+| `maxPrice`  | number | Maksymalna cena                               |
+| `location`  | string | Filtr lokalizacji (regex, case-insensitive)   |
+| `ids`       | string | Lista ID po przecinku — zwraca tylko te rekordy |
+
+### Categories
+
+| Metoda | Endpoint                | Opis                  | Dostęp      |
+|--------|-------------------------|-----------------------|-------------|
+| GET    | `/api/categories`       | Lista kategorii       | publiczny   |
+| POST   | `/api/categories`       | Dodanie kategorii     | JWT + admin |
+| PUT    | `/api/categories/:id`   | Edycja kategorii      | JWT + admin |
+| DELETE | `/api/categories/:id`   | Usunięcie kategorii   | JWT + admin |
+
+### Messages (Czat)
+
+| Metoda | Endpoint                          | Opis                                                        | Dostęp |
+|--------|-----------------------------------|-------------------------------------------------------------|--------|
+| GET    | `/api/messages`                   | Lista rozmów (z licznikiem nieprzeczytanych)                | JWT    |
+| GET    | `/api/messages/unread-count`      | Liczba nieprzeczytanych wiadomości                          | JWT    |
+| GET    | `/api/messages/with/:userId`      | Konwersacja z użytkownikiem (oznacza jako przeczytane)      | JWT    |
+| POST   | `/api/messages`                   | Wysłanie wiadomości (auto-reply przy pierwszej wiadomości)  | JWT    |
 
 ### Admin
 
-| Metoda | Endpoint                       | Opis                      | Dostep     |
-|--------|--------------------------------|---------------------------|------------|
-| GET    | `/api/admin/users`             | Lista uzytkownikow        | JWT + admin |
-| GET    | `/api/admin/users/:id`         | Szczegoly uzytkownika     | JWT + admin |
-| PUT    | `/api/admin/users/:id/role`    | Zmiana roli uzytkownika   | JWT + admin |
-| DELETE | `/api/admin/users/:id`         | Usuniecie uzytkownika     | JWT + admin |
+| Metoda | Endpoint                       | Opis                      | Dostęp      |
+|--------|--------------------------------|---------------------------|-------------|
+| GET    | `/api/admin/users`             | Lista użytkowników        | JWT + admin |
+| GET    | `/api/admin/users/:id`         | Szczegóły użytkownika     | JWT + admin |
+| PUT    | `/api/admin/users/:id/role`    | Zmiana roli użytkownika   | JWT + admin |
+| DELETE | `/api/admin/users/:id`         | Usunięcie użytkownika (wraz z ogłoszeniami i wiadomościami) | JWT + admin |
 
 ## Autoryzacja
 
-Chronione endpointy wymagaja naglowka:
+Chronione endpointy wymagają nagłówka:
 
 ```
-Authorization: Bearer <token_z_logowania>
+Authorization: Bearer <access_token>
 ```
 
-Token JWT wazny 7 dni. Uzyskiwany przez `POST /api/auth/login`.
+Access token ważny **15 minut**. Po wygaśnięciu Angular interceptor automatycznie wywołuje `POST /api/auth/refresh` (używając httpOnly cookie) i ponawia zapytanie — użytkownik nie zauważa przerwy.
 
-## Seed — dane poczatkowe
+## Seed — dane początkowe
 
 Komenda `npm run seed` tworzy:
 
 - **Konto admina** — `admin@listapp.pl` / `admin123`
-- **10 kategorii** — Elektronika, Motoryzacja, Nieruchomosci, Praca, Uslugi, Moda, Dom i Ogrod, Sport, Muzyka, Inne
-- **3 przykladowe ogloszenia**
+- **10 kategorii** — Elektronika, Motoryzacja, Nieruchomości, Praca, Usługi, Moda, Dom i Ogród, Sport, Muzyka, Inne
+- **3 przykładowe ogłoszenia**
 
 Skrypt jest idempotentny — nie duplikuje danych przy ponownym uruchomieniu.
-
-## Testowanie API
-
-Kolekcja Postman: [`docs/ListApp.postman_collection.json`](docs/ListApp.postman_collection.json)
-
-Import: Postman → File → Import → wybierz plik.
-
-Pelna dokumentacja API z przykladami zapytan: [`docs/api.md`](docs/api.md)
 
 ## Dokumentacja
 
 - [Diagram ERD](docs/ERD_DIAGRAM.png)
 - [Diagram Use Case](docs/Use_Case.png)
-- [Dokumentacja API](docs/api.md)
 - [Kolekcja Postman](docs/ListApp.postman_collection.json)

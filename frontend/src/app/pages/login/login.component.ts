@@ -2,13 +2,24 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .auth-wrapper {
@@ -16,28 +27,27 @@ import { NotificationService } from '../../core/services/notification.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+      background: var(--bg);
       padding: 2rem 1rem;
     }
 
     .auth-card {
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
+      box-shadow: none;
       width: 100%;
       max-width: 420px;
       padding: 2.5rem;
     }
 
     .logo {
+      display: block;
       font-size: 1.75rem;
       font-weight: 700;
       text-align: center;
       margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: var(--primary);
     }
 
     .subtitle {
@@ -48,8 +58,9 @@ import { NotificationService } from '../../core/services/notification.service';
     }
 
     .form-error {
-      background: #fee2e2;
-      color: #991b1b;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
       padding: 0.625rem 0.75rem;
       border-radius: var(--radius);
       margin-bottom: 1rem;
@@ -75,7 +86,7 @@ import { NotificationService } from '../../core/services/notification.service';
   template: `
     <div class="auth-wrapper">
       <div class="auth-card">
-        <div class="logo">LokalneOgłoszenia</div>
+        <a class="logo" routerLink="/">Bazarek</a>
         <p class="subtitle">Zaloguj się, aby kontynuować</p>
 
         @if (errorMessage()) {
@@ -83,27 +94,31 @@ import { NotificationService } from '../../core/services/notification.service';
         }
 
         <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" type="email" formControlName="email" placeholder="jan@example.com" autocomplete="email" />
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="jan@example.com" autocomplete="email" />
             @if (showError('email', 'required')) {
-              <span class="error-text">Email jest wymagany</span>
+              <mat-error>Email jest wymagany</mat-error>
             }
             @if (showError('email', 'email')) {
-              <span class="error-text">Nieprawidłowy format email</span>
+              <mat-error>Nieprawidłowy format email</mat-error>
             }
-          </div>
+          </mat-form-field>
 
-          <div class="form-group">
-            <label for="password">Hasło</label>
-            <input id="password" type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+          <mat-form-field appearance="outline">
+            <mat-label>Hasło</mat-label>
+            <input matInput type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
             @if (showError('password', 'required')) {
-              <span class="error-text">Hasło jest wymagane</span>
+              <mat-error>Hasło jest wymagane</mat-error>
             }
-          </div>
+          </mat-form-field>
 
-          <button class="btn btn-primary btn-block" type="submit" [disabled]="loading()">
-            {{ loading() ? 'Logowanie...' : 'Zaloguj się' }}
+          <button mat-flat-button color="primary" type="submit" [disabled]="loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+            } @else {
+              Zaloguj się
+            }
           </button>
         </form>
 
@@ -150,7 +165,11 @@ export class LoginComponent {
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Błąd logowania');
+        if (err.error?.code === 'EMAIL_NOT_VERIFIED') {
+          this.errorMessage.set('Konto nie zostało jeszcze potwierdzone. Sprawdź skrzynkę pocztową i kliknij link weryfikacyjny.');
+        } else {
+          this.errorMessage.set(err.error?.message ?? 'Błąd logowania');
+        }
       },
     });
   }

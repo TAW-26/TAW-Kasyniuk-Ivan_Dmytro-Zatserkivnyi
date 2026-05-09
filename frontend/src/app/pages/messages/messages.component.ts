@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, View
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { ConversationSummary, Message } from '../../core/models/message.model';
 import { User } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
@@ -11,7 +13,7 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .chat-shell {
@@ -34,9 +36,10 @@ import { NotificationService } from '../../core/services/notification.service';
     }
 
     .conversations-pane {
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-sm);
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -69,7 +72,8 @@ import { NotificationService } from '../../core/services/notification.service';
     }
 
     .conversation-row.active {
-      background: var(--gray-100);
+      background: var(--primary-50);
+      border-left: 3px solid var(--primary);
     }
 
     .conversation-avatar {
@@ -77,13 +81,43 @@ import { NotificationService } from '../../core/services/notification.service';
       height: 38px;
       flex-shrink: 0;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      background: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: #fff;
       font-weight: 600;
       font-size: 0.9rem;
+      overflow: hidden;
+    }
+    .conversation-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .message-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      max-width: 70%;
+    }
+    .message-row.mine {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message-row.theirs {
+      align-self: flex-start;
+    }
+    .message-row .conversation-avatar {
+      width: 28px;
+      height: 28px;
+      font-size: 0.7rem;
+    }
+    .message-row .message-bubble {
+      max-width: 100%;
+    }
+    .message-row.mine + .message-meta {
+      align-self: flex-end;
     }
 
     .conversation-meta {
@@ -131,9 +165,10 @@ import { NotificationService } from '../../core/services/notification.service';
     }
 
     .chat-pane {
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-sm);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -164,7 +199,7 @@ import { NotificationService } from '../../core/services/notification.service';
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      background: var(--gray-50);
+      background: var(--surface);
     }
 
     .message-bubble {
@@ -179,13 +214,14 @@ import { NotificationService } from '../../core/services/notification.service';
     .message-bubble.mine {
       align-self: flex-end;
       background: var(--primary);
-      color: white;
+      color: #fff;
       border-bottom-right-radius: 4px;
     }
 
     .message-bubble.theirs {
       align-self: flex-start;
-      background: white;
+      background: var(--card);
+      color: var(--text);
       border: 1px solid var(--gray-200);
       border-bottom-left-radius: 4px;
     }
@@ -196,7 +232,8 @@ import { NotificationService } from '../../core/services/notification.service';
       margin-top: 0.15rem;
     }
 
-    .message-bubble.mine + .message-meta {
+    .message-bubble.mine + .message-meta,
+    .message-meta.mine {
       align-self: flex-end;
     }
 
@@ -214,24 +251,33 @@ import { NotificationService } from '../../core/services/notification.service';
       border-top: 1px solid var(--gray-200);
       padding: 0.75rem;
       display: flex;
+      align-items: center;
       gap: 0.5rem;
-      background: white;
+      background: var(--card);
     }
 
     .composer textarea {
       flex: 1;
       resize: none;
+      height: 44px;
       min-height: 44px;
-      max-height: 120px;
+      max-height: 44px;
       padding: 0.6rem 0.75rem;
       border: 1px solid var(--gray-300);
       border-radius: var(--radius);
       font-family: inherit;
       font-size: 0.9rem;
+      line-height: 1.4;
+      background: var(--gray-100);
+      color: var(--text);
+      overflow-y: auto;
     }
 
     .composer button {
-      align-self: flex-end;
+      align-self: center;
+      flex: 0 0 64px;
+      height: 44px;
+      min-width: 64px;
     }
 
     .placeholder-pane {
@@ -274,7 +320,13 @@ import { NotificationService } from '../../core/services/notification.service';
                 class="conversation-row"
                 [class.active]="activePartner()?._id === conv.partner._id"
                 (click)="openConversation(conv.partner)">
-                <div class="conversation-avatar">{{ initials(conv.partner.username) }}</div>
+                <div class="conversation-avatar">
+                  @if (conv.partner.avatar) {
+                    <img [src]="conv.partner.avatar" [alt]="conv.partner.username" />
+                  } @else {
+                    {{ initials(conv.partner.username) }}
+                  }
+                </div>
                 <div class="conversation-meta">
                   <div class="conversation-name">
                     <span>
@@ -306,7 +358,13 @@ import { NotificationService } from '../../core/services/notification.service';
         } @else {
           <div class="chat-header">
             <button class="back-btn" type="button" (click)="closeConversation()">&larr; Lista</button>
-            <div class="conversation-avatar">{{ initials(activePartner()!.username) }}</div>
+            <div class="conversation-avatar">
+              @if (partnerAvatar()) {
+                <img [src]="partnerAvatar()" [alt]="activePartner()!.username" />
+              } @else {
+                {{ initials(activePartner()!.username) }}
+              }
+            </div>
             <div>
               <div class="partner-name">{{ activePartner()!.username }}</div>
               <div class="partner-meta">{{ activePartner()!.email }}</div>
@@ -325,10 +383,19 @@ import { NotificationService } from '../../core/services/notification.service';
                     Dotyczy ogłoszenia: {{ getListingTitle(msg) }}
                   </div>
                 }
-                <div class="message-bubble" [class.mine]="isMine(msg)" [class.theirs]="!isMine(msg)">
-                  {{ msg.content }}
+                <div class="message-row" [class.mine]="isMine(msg)" [class.theirs]="!isMine(msg)">
+                  <div class="conversation-avatar">
+                    @if (avatarFor(msg)) {
+                      <img [src]="avatarFor(msg)" alt="avatar" />
+                    } @else {
+                      {{ initials(usernameFor(msg)) }}
+                    }
+                  </div>
+                  <div class="message-bubble" [class.mine]="isMine(msg)" [class.theirs]="!isMine(msg)">
+                    {{ msg.content }}
+                  </div>
                 </div>
-                <div class="message-meta">{{ formatTime(msg.createdAt) }}</div>
+                <div class="message-meta" [class.mine]="isMine(msg)">{{ formatTime(msg.createdAt) }}</div>
               }
             }
           </div>
@@ -339,8 +406,12 @@ import { NotificationService } from '../../core/services/notification.service';
               name="draft"
               placeholder="Napisz wiadomość..."
               (keydown.enter)="onEnter($event)"></textarea>
-            <button type="submit" class="btn btn-primary" [disabled]="!draft.trim() || sending()">
-              {{ sending() ? '...' : 'Wyślij' }}
+            <button mat-flat-button color="primary" type="submit" [disabled]="!draft.trim() || sending()">
+              @if (sending()) {
+                <span class="btn-spinner"></span>
+              } @else {
+                <mat-icon>send</mat-icon>
+              }
             </button>
           </form>
         }
@@ -359,7 +430,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   protected readonly conversations = signal<ConversationSummary[]>([]);
   protected readonly loadingConversations = signal(true);
-  protected readonly activePartner = signal<{ _id: string; username: string; email: string } | null>(null);
+  protected readonly activePartner = signal<{ _id: string; username: string; email: string; avatar?: string } | null>(null);
   protected readonly activeListingId = signal<string | null>(null);
   protected readonly messages = signal<Message[]>([]);
   protected readonly loadingMessages = signal(false);
@@ -367,6 +438,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   protected draft = '';
 
   protected readonly myId = computed(() => this.auth.user()?._id ?? null);
+  protected readonly partnerAvatar = computed(() => this.activePartner()?.avatar ?? '');
 
   private pollSub?: Subscription;
 
@@ -376,9 +448,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe((params) => {
       const to = params.get('to');
       const listing = params.get('listing');
+      const prefill = params.get('prefill');
       if (to) {
         this.activeListingId.set(listing);
         this.openPartnerById(to);
+        if (prefill) {
+          this.draft = prefill;
+        }
       }
     });
 
@@ -412,6 +488,20 @@ export class MessagesComponent implements OnInit, OnDestroy {
       : d.toLocaleDateString('pl-PL');
   }
 
+  protected avatarFor(msg: Message): string {
+    if (this.isMine(msg)) return this.auth.user()?.avatar ?? '';
+    const from = msg.from;
+    if (typeof from === 'object' && from?.avatar) return from.avatar;
+    return this.activePartner()?.avatar ?? '';
+  }
+
+  protected usernameFor(msg: Message): string {
+    if (this.isMine(msg)) return this.auth.user()?.username ?? '?';
+    const from = msg.from;
+    if (typeof from === 'object' && from?.username) return from.username;
+    return this.activePartner()?.username ?? '?';
+  }
+
   protected isMine(msg: Message): boolean {
     const fromId = typeof msg.from === 'string' ? msg.from : (msg.from as User)._id;
     return fromId === this.myId();
@@ -438,7 +528,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
     return typeof msg.listing_id === 'string' ? msg.listing_id : msg.listing_id._id;
   }
 
-  protected openConversation(partner: { _id: string; username: string; email: string }): void {
+  protected openConversation(partner: { _id: string; username: string; email: string; avatar?: string }): void {
     this.activePartner.set(partner);
     this.loadMessages(partner._id);
     this.router.navigate([], {

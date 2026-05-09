@@ -12,7 +12,7 @@ export interface Message {
 }
 
 export interface ConversationSummary {
-  partner: { _id: string; username: string; email: string };
+  partner: { _id: string; username: string; email: string; avatar?: string };
   lastMessage: {
     _id: string;
     content: string;

@@ -29,7 +29,10 @@ export class MessagesService {
   refreshUnreadCount(): void {
     this.http.get<{ count: number }>(`${this.baseUrl}/unread-count`).subscribe({
       next: (res) => this._unreadCount.set(res.count),
-      error: () => this._unreadCount.set(0),
+      error: (err) => {
+        if (err.status !== 401) console.error('[MessagesService] unread-count:', err.message);
+        this._unreadCount.set(0);
+      },
     });
   }
 

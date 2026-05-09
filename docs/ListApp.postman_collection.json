@@ -39,8 +39,8 @@
               "script": {
                 "exec": [
                   "const res = pm.response.json();",
-                  "if (res.token) {",
-                  "  pm.collectionVariables.set('token', res.token);",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('token', res.accessToken);",
                   "}"
                 ]
               }
@@ -66,8 +66,8 @@
               "script": {
                 "exec": [
                   "const res = pm.response.json();",
-                  "if (res.token) {",
-                  "  pm.collectionVariables.set('token', res.token);",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('token', res.accessToken);",
                   "}"
                 ]
               }
@@ -84,6 +84,109 @@
               "raw": "{\n  \"email\": \"admin@listapp.pl\",\n  \"password\": \"admin123\"\n}"
             }
           }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh" },
+            "description": "Wymaga httpOnly cookie refreshToken (ustawiane automatycznie przy logowaniu)"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout" },
+            "description": "Usuwa refreshToken z bazy i czyści cookie"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/verify/TOKEN_HERE" },
+            "description": "Weryfikacja email — tylko w trybie production"
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/me" }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/me" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Nowe Imię\",\n  \"phone\": \"+48123456789\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/me/password" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"stareHaslo123\",\n  \"newPassword\": \"noweHaslo456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/me" },
+            "description": "Usuwa konto, ogłoszenia i wiadomości użytkownika"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Favorites",
+      "item": [
+        {
+          "name": "Toggle Favorite",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/favorites/toggle/LISTING_ID_HERE" },
+            "description": "Dodaje lub usuwa ogłoszenie z ulubionych. Zwraca zaktualizowaną listę favorites[]."
+          }
+        },
+        {
+          "name": "Clear All Favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/favorites" }
+          }
         }
       ]
     },
@@ -98,10 +201,32 @@
           }
         },
         {
-          "name": "Get All (with search)",
+          "name": "Get All (search + sort)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/listings?search=laptop&sort=price_asc" }
+            "url": { "raw": "{{baseUrl}}/api/listings?search=laptop&sort=price_asc&page=1&limit=20" }
+          }
+        },
+        {
+          "name": "Get All (price range + location)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/listings?minPrice=100&maxPrice=1000&location=Warszawa" }
+          }
+        },
+        {
+          "name": "Get All (by category)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/listings?category=CATEGORY_ID_HERE&status=active" }
+          }
+        },
+        {
+          "name": "Get All (by ids)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/listings?ids=ID1,ID2,ID3" },
+            "description": "Zwraca tylko ogłoszenia o podanych ID (ulubione gościa)"
           }
         },
         {
@@ -134,6 +259,17 @@
               "mode": "raw",
               "raw": "{\n  \"title\": \"Rower gorski Trek\",\n  \"description\": \"Rama aluminiowa, kola 29 cali\",\n  \"price\": 1200,\n  \"location\": \"Gdansk\",\n  \"category_id\": \"CATEGORY_ID_HERE\"\n}"
             }
+          }
+        },
+        {
+          "name": "Mark as Sold",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/listings/LISTING_ID_HERE/mark-sold" },
+            "description": "Tylko właściciel ogłoszenia może oznaczyć jako sprzedane"
           }
         },
         {
@@ -174,7 +310,7 @@
           }
         },
         {
-          "name": "Create Category",
+          "name": "Create Category (Admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -189,7 +325,7 @@
           }
         },
         {
-          "name": "Update Category",
+          "name": "Update Category (Admin)",
           "request": {
             "method": "PUT",
             "header": [
@@ -204,13 +340,66 @@
           }
         },
         {
-          "name": "Delete Category",
+          "name": "Delete Category (Admin)",
           "request": {
             "method": "DELETE",
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "url": { "raw": "{{baseUrl}}/api/categories/CATEGORY_ID_HERE" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/messages" },
+            "description": "Lista rozmów z licznikiem nieprzeczytanych wiadomości"
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/messages/unread-count" }
+          }
+        },
+        {
+          "name": "Get Conversation with User",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/messages/with/USER_ID_HERE" },
+            "description": "Pobiera wiadomości i oznacza je jako przeczytane"
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/messages" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"USER_ID_HERE\",\n  \"content\": \"Dzień dobry, czy rower jest jeszcze dostępny?\",\n  \"listing_id\": \"LISTING_ID_HERE\"\n}"
+            },
+            "description": "Przy pierwszej wiadomości sprzedawca otrzymuje automatyczną odpowiedź po 1.5s"
           }
         }
       ]
@@ -260,7 +449,8 @@
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
-            "url": { "raw": "{{baseUrl}}/api/admin/users/USER_ID_HERE" }
+            "url": { "raw": "{{baseUrl}}/api/admin/users/USER_ID_HERE" },
+            "description": "Usuwa użytkownika wraz z jego ogłoszeniami i wiadomościami"
           }
         }
       ]
