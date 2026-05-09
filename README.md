@@ -86,6 +86,75 @@ npx ng serve            # http://localhost:4200
 
 > Frontend korzysta z proxy (`proxy.conf.json`) — zapytania `/api/*` są przekierowywane do `http://localhost:5000`. Nie ma potrzeby ręcznej konfiguracji CORS w przeglądarce.
 
+## Testy
+
+W projekcie dodano testy dla krytycznych funkcji backendu oraz komponentów frontendu. Użyty framework testowy: **Jest**.
+
+### Backend
+
+Backend ma **7 testów integracyjnych API** w pliku `backend/__tests__/auth-listings.test.js`.
+
+Zakres testów:
+
+- rejestracja użytkownika bez wymaganych pól zwraca błąd,
+- poprawna rejestracja nie zwraca hasła w odpowiedzi,
+- logowanie zwraca `accessToken` i ustawia refresh cookie,
+- chroniony endpoint profilu bez tokenu zwraca `401`,
+- tworzenie ogłoszenia bez wymaganych pól zwraca błąd,
+- zalogowany użytkownik może utworzyć ogłoszenie,
+- inny użytkownik nie może oznaczyć cudzego ogłoszenia jako sprzedane.
+
+Uruchomienie:
+
+```bash
+cd backend
+npm test
+```
+
+Oczekiwany wynik:
+
+```text
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+```
+
+### Frontend
+
+Frontend ma **9 testów komponentów Angular** w plikach:
+
+- `frontend/src/app/pages/login/login.component.spec.ts`,
+- `frontend/src/app/pages/register/register.component.spec.ts`,
+- `frontend/src/app/pages/add-ad/add-ad.component.spec.ts`,
+- `frontend/src/app/shared/components/ad-card/ad-card.component.spec.ts`.
+
+Zakres testów:
+
+- formularz logowania nie wysyła pustych danych,
+- poprawne logowanie wywołuje `AuthService` i przekierowuje na `/ads`,
+- błąd logowania jest pokazywany użytkownikowi,
+- rejestracja blokuje niezgodne hasła,
+- rejestracja pokazuje stan weryfikacji email,
+- formularz ogłoszenia nie wysyła pustych danych,
+- poprawne dane tworzą ogłoszenie,
+- karta ogłoszenia przechodzi do szczegółów,
+- przycisk ulubionych nie otwiera szczegółów ogłoszenia.
+
+Uruchomienie:
+
+```bash
+cd frontend
+npm test
+```
+
+Oczekiwany wynik:
+
+```text
+Test Suites: 4 passed, 4 total
+Tests:       9 passed, 9 total
+```
+
+Pliki `*.spec.ts` są wykluczone z buildu aplikacji w `frontend/tsconfig.app.json`, dlatego `npx ng serve` uruchamia aplikację, a `npm test` uruchamia testy.
+
 ## Technologie
 
 | Warstwa      | Technologie                                                              |
@@ -93,11 +162,15 @@ npx ng serve            # http://localhost:4200
 | Frontend     | Angular 17 (standalone, signals, OnPush), TypeScript, Angular Material   |
 | Backend      | Node.js, Express 5, JWT, Mongoose, bcrypt, cookie-parser, express-rate-limit |
 | Baza danych  | MongoDB (Atlas lub lokalnie)                                             |
+| Testy        | Jest, Supertest, mongodb-memory-server, jest-preset-angular              |
 
 ## Struktura projektu
 
 ```
 backend/
+├── __tests__/
+│   └── auth-listings.test.js     # testy integracyjne auth i ogłoszeń
+├── app.js                         # konfiguracja aplikacji Express dla serwera i testów
 ├── config/
 │   └── db.js                    # połączenie z MongoDB
 ├── controllers/
@@ -126,7 +199,7 @@ backend/
 │   ├── messages.js              # endpointy czatu
 │   └── admin.js                 # endpointy panelu admina
 ├── seed.js                      # skrypt inicjalizujący bazę danych
-├── server.js                    # główny plik serwera
+├── server.js                    # start serwera, walidacja env, połączenie z bazą
 └── package.json
 
 frontend/src/app/
@@ -138,6 +211,12 @@ frontend/src/app/
 ├── pages/                       # ads, ad-detail, add-ad, favorites, home,
 │                                # login, messages, profile, register, settings
 └── shared/                      # komponenty współdzielone (ad-card, stats-mini, ...)
+
+frontend/
+├── jest.config.js                # konfiguracja Jest dla Angulara
+├── setup-jest.ts                 # środowisko testowe Angular + Zone.js
+├── tsconfig.spec.json            # TypeScript dla testów
+└── src/**/*.spec.ts              # testy komponentów frontendu
 ```
 
 ## API Endpoints
