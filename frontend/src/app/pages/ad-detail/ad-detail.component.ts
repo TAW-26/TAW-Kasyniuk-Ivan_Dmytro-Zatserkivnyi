@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { Listing } from '../../core/models/listing.model';
 import { Category } from '../../core/models/category.model';
 import { User } from '../../core/models/user.model';
@@ -11,16 +13,16 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-ad-detail',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .public-shell {
       min-height: 100vh;
-      background: var(--gray-50);
+      background: var(--bg);
     }
     .topbar {
-      background: white;
-      border-bottom: 1px solid var(--gray-200);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       padding: 1rem 2rem;
       display: flex;
       align-items: center;
@@ -33,10 +35,7 @@ import { NotificationService } from '../../core/services/notification.service';
     .topbar-brand {
       font-size: 1.25rem;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: var(--text);
     }
     .topbar-actions {
       display: flex;
@@ -55,7 +54,8 @@ import { NotificationService } from '../../core/services/notification.service';
     }
 
     .detail-container {
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: 2rem;
       max-width: 900px;
@@ -82,11 +82,11 @@ import { NotificationService } from '../../core/services/notification.service';
       height: 400px;
       border-radius: var(--radius-lg);
       overflow: hidden;
-      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      background: var(--gray-100);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: var(--text-muted);
       font-size: 1rem;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -147,11 +147,28 @@ import { NotificationService } from '../../core/services/notification.service';
     .back-link {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      color: var(--primary);
+      gap: 0.5rem;
+      color: var(--text);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.55rem 0.85rem;
       cursor: pointer;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
       font-weight: 500;
+      font-size: 0.9rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .back-link:hover {
+      background: var(--gray-100);
+      border-color: var(--text);
+    }
+
+    .back-link mat-icon {
+      font-size: 1.1rem;
+      width: 1.1rem;
+      height: 1.1rem;
     }
 
     .divider {
@@ -179,8 +196,9 @@ import { NotificationService } from '../../core/services/notification.service';
     }
 
     .badge-sold {
-      background: #fee2e2;
-      color: #991b1b;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
       display: inline-block;
       padding: 0.25rem 0.75rem;
       border-radius: 0.25rem;
@@ -204,20 +222,20 @@ import { NotificationService } from '../../core/services/notification.service';
   template: `
     <div class="public-shell">
       <header class="topbar">
-        <a class="topbar-brand" routerLink="/">LokalneOgłoszenia</a>
+        <a class="topbar-brand" routerLink="/">Bazarek</a>
         <div class="topbar-actions">
-          @if (auth.isLoggedIn()) {
-            <span class="username">{{ auth.user()?.username }}</span>
-            <a class="btn btn-primary" routerLink="/ads">Przejdź do panelu</a>
-          } @else {
+          @if (!auth.isLoggedIn()) {
             <a class="btn btn-outline" routerLink="/login">Zaloguj się</a>
-            <a class="btn btn-primary" routerLink="/register">Załóż konto</a>
+            <a class="btn btn-primary" routerLink="/register">Zarejestruj się</a>
           }
         </div>
       </header>
 
     <div class="content-section">
-      <a class="back-link" (click)="back()">&larr; Powrót do ogłoszeń</a>
+      <button class="back-link" type="button" (click)="back()">
+        <mat-icon>arrow_back</mat-icon>
+        Powrót do ogłoszeń
+      </button>
 
       @if (loading()) {
         <div class="empty-state">
@@ -285,19 +303,25 @@ import { NotificationService } from '../../core/services/notification.service';
 
           <div class="seller-card">
             <div class="seller-name">Sprzedawca: {{ sellerName() }}</div>
-            @if (sellerEmail()) {
-              <div class="seller-contact">Email: {{ sellerEmail() }}</div>
-            }
             @if (sellerPhone()) {
               <div class="seller-contact">Telefon: {{ sellerPhone() }}</div>
             }
           </div>
 
           <div class="contact-buttons">
-            @if (canBuy()) {
-              <button class="btn btn-primary" (click)="buyNow()" [disabled]="purchasing()">
-                {{ purchasing() ? 'Przetwarzanie...' : 'Kup teraz' }}
+            @if (isOwner()) {
+              <a class="btn btn-outline" [routerLink]="['/ads', listing()!._id, 'edit']">
+                <mat-icon>edit</mat-icon>
+                Edytuj
+              </a>
+            }
+            @if (canMarkSold()) {
+              <button class="btn btn-outline" (click)="markAsSold()" [disabled]="marking()">
+                {{ marking() ? 'Zapisywanie...' : 'Oznacz jako sprzedane' }}
               </button>
+            }
+            @if (canBuyIntent()) {
+              <button class="btn btn-primary" (click)="wantToBuy()">Chcę kupić</button>
             }
             @if (canMessage()) {
               <button class="btn btn-outline" (click)="openChat()">Napisz</button>
@@ -306,10 +330,13 @@ import { NotificationService } from '../../core/services/notification.service';
               <a class="btn btn-outline" [href]="'tel:' + sellerPhone()">Zadzwoń</a>
             }
             @if (canDelete()) {
-              <button class="btn btn-danger" (click)="remove()">Usuń ogłoszenie</button>
+              <button mat-stroked-button color="warn" (click)="remove()">
+                <mat-icon>delete</mat-icon>
+                {{ auth.isAdmin() && !isOwner() ? 'Usuń (admin)' : 'Usuń ogłoszenie' }}
+              </button>
             }
             @if (!auth.isLoggedIn() && listing()!.status !== 'sold') {
-              <a class="btn btn-primary" routerLink="/login">Zaloguj się, aby kupić lub napisać</a>
+              <a class="btn btn-primary" routerLink="/login">Zaloguj się, aby napisać do sprzedawcy</a>
             }
           </div>
         </div>
@@ -330,7 +357,8 @@ export class AdDetailComponent implements OnInit {
   protected readonly listing = signal<Listing | null>(null);
   protected readonly loading = signal(true);
   protected readonly activeIndex = signal(0);
-  protected readonly purchasing = signal(false);
+  protected readonly marking = signal(false);
+  protected readonly darkMode = signal(localStorage.getItem('theme') === 'dark');
 
   protected readonly gallery = computed<string[]>(() => this.listing()?.images ?? []);
 
@@ -373,12 +401,6 @@ export class AdDetailComponent implements OnInit {
     return typeof ad.user_id === 'string' ? '—' : (ad.user_id as User).username;
   });
 
-  protected readonly sellerEmail = computed<string>(() => {
-    const ad = this.listing();
-    if (!ad) return '';
-    return typeof ad.user_id === 'string' ? '' : (ad.user_id as User).email;
-  });
-
   protected readonly sellerPhone = computed<string>(() => {
     const ad = this.listing();
     if (!ad) return '';
@@ -397,7 +419,13 @@ export class AdDetailComponent implements OnInit {
     return !!(me && seller && me._id === seller);
   });
 
-  protected readonly canBuy = computed(() => {
+  protected readonly canMarkSold = computed(() => {
+    const ad = this.listing();
+    if (!ad) return false;
+    return this.isOwner() && ad.status !== 'sold';
+  });
+
+  protected readonly canBuyIntent = computed(() => {
     const ad = this.listing();
     if (!ad) return false;
     return this.auth.isLoggedIn() && !this.isOwner() && ad.status !== 'sold';
@@ -416,7 +444,22 @@ export class AdDetailComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.applyTheme();
     this.load();
+  }
+
+  toggleTheme(): void {
+    this.darkMode.update((value) => !value);
+    localStorage.setItem('theme', this.darkMode() ? 'dark' : 'light');
+    this.applyTheme();
+  }
+
+  private applyTheme(): void {
+    if (this.darkMode()) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
   }
 
   private load(): void {
@@ -440,21 +483,21 @@ export class AdDetailComponent implements OnInit {
     this.notifications.show(added ? 'Dodano do ulubionych' : 'Usunięto z ulubionych');
   }
 
-  buyNow(): void {
+  markAsSold(): void {
     const ad = this.listing();
     if (!ad) return;
-    if (!confirm(`Czy na pewno chcesz kupić "${ad.title}" za ${this.formattedPrice()}?`)) return;
+    if (!confirm(`Oznaczyć "${ad.title}" jako sprzedane?`)) return;
 
-    this.purchasing.set(true);
-    this.listingService.purchase(ad._id).subscribe({
+    this.marking.set(true);
+    this.listingService.markAsSold(ad._id).subscribe({
       next: (updated) => {
-        this.purchasing.set(false);
+        this.marking.set(false);
         this.listing.set(updated);
-        this.notifications.show('Zakup potwierdzony — skontaktuj się ze sprzedawcą');
+        this.notifications.show('Ogłoszenie oznaczone jako sprzedane');
       },
       error: (err) => {
-        this.purchasing.set(false);
-        this.notifications.show(err.error?.message ?? 'Nie udało się zrealizować zakupu');
+        this.marking.set(false);
+        this.notifications.show(err.error?.message ?? 'Nie udało się zaktualizować ogłoszenia');
       },
     });
   }
@@ -465,6 +508,16 @@ export class AdDetailComponent implements OnInit {
     if (!seller || !ad) return;
     this.router.navigate(['/messages'], {
       queryParams: { to: seller, listing: ad._id },
+    });
+  }
+
+  wantToBuy(): void {
+    const seller = this.sellerId();
+    const ad = this.listing();
+    if (!seller || !ad) return;
+    const prefill = `Witam, chciałbym kupić „${ad.title}" za ${this.formattedPrice()}. Czy jest jeszcze dostępne?`;
+    this.router.navigate(['/messages'], {
+      queryParams: { to: seller, listing: ad._id, prefill },
     });
   }
 

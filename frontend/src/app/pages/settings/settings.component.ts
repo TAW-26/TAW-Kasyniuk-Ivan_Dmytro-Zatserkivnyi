@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 
@@ -9,7 +15,15 @@ type Tab = 'account' | 'notifications' | 'privacy';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatTabsModule,
+    MatIconModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .content-section { padding: 2rem; }
@@ -17,13 +31,14 @@ type Tab = 'account' | 'notifications' | 'privacy';
     .section-header { display: flex; align-items: center; margin-bottom: 1.5rem; }
     .section-title { font-size: 1.25rem; font-weight: 600; }
     .settings-card {
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       padding: 2rem;
       border-radius: var(--radius-lg);
       max-width: 600px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-sm);
     }
-    hr { border: none; border-top: 1px solid var(--gray-200); margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid var(--gray-200); margin: 1.25rem 0; }
     .checkbox-row {
       display: flex;
       align-items: center;
@@ -33,6 +48,20 @@ type Tab = 'account' | 'notifications' | 'privacy';
     .checkbox-row input[type="checkbox"] {
       width: auto;
     }
+    .tab-section { margin-top: 1.5rem; }
+    .tab-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+    .tab-actions { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
+    .field-error {
+      color: var(--danger);
+      font-size: 0.75rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.25rem;
+    }
   `],
   template: `
     <div class="content-section">
@@ -41,78 +70,115 @@ type Tab = 'account' | 'notifications' | 'privacy';
       </div>
 
       <div class="settings-card">
-        <div class="tabs">
-          <button class="tab" [class.active]="activeTab() === 'account'" (click)="activeTab.set('account')">
-            Konto
-          </button>
-          <button class="tab" [class.active]="activeTab() === 'notifications'" (click)="activeTab.set('notifications')">
-            Powiadomienia
-          </button>
-          <button class="tab" [class.active]="activeTab() === 'privacy'" (click)="activeTab.set('privacy')">
-            Prywatność
-          </button>
-        </div>
+        <mat-tab-group>
+          <mat-tab label="Konto">
+            <div class="tab-section">
+              <div class="tab-section-title">Zmiana hasła</div>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Aktualne hasło</mat-label>
+                  <input matInput type="password" [(ngModel)]="currentPassword" name="currentPassword"
+                    placeholder="Wprowadź aktualne hasło" #curPw="ngModel" required />
+                  @if (curPw.touched && curPw.errors?.['required']) {
+                    <mat-error>Pole wymagane</mat-error>
+                  }
+                </mat-form-field>
 
-        @if (activeTab() === 'account') {
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Aktualne hasło</label>
-              <input type="password" [(ngModel)]="currentPassword" placeholder="••••••••" />
+                <mat-form-field appearance="outline">
+                  <mat-label>Nowe hasło</mat-label>
+                  <input matInput type="password" [(ngModel)]="newPassword" name="newPassword"
+                    placeholder="Min. 6 znaków" #newPw="ngModel" required minlength="6" />
+                  @if (newPw.touched && newPw.errors?.['required']) {
+                    <mat-error>Pole wymagane</mat-error>
+                  }
+                  @if (newPw.touched && newPw.errors?.['minlength']) {
+                    <mat-error>Min. 6 znaków</mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Powtórz nowe hasło</mat-label>
+                  <input matInput type="password" [(ngModel)]="confirmPassword" name="confirmPassword"
+                    placeholder="Powtórz nowe hasło" #confPw="ngModel" required />
+                  @if (confPw.touched && confirmPassword && newPassword !== confirmPassword) {
+                    <mat-error>Hasła nie są takie same</mat-error>
+                  }
+                  @if (confPw.touched && confPw.errors?.['required']) {
+                    <mat-error>Pole wymagane</mat-error>
+                  }
+                </mat-form-field>
+
+                <button mat-flat-button color="primary" (click)="changePassword()">Zmień hasło</button>
+              </div>
             </div>
-            <div class="form-group">
-              <label>Nowe hasło</label>
-              <input type="password" [(ngModel)]="newPassword" placeholder="••••••••" />
-            </div>
-            <div class="form-group">
-              <label>Powtórz nowe hasło</label>
-              <input type="password" [(ngModel)]="confirmPassword" placeholder="••••••••" />
-            </div>
-            <button class="btn btn-primary" (click)="changePassword()">Zmień hasło</button>
+
             <hr />
-            <button class="btn btn-secondary" (click)="logout()">Wyloguj się</button>
-            <button class="btn btn-danger" (click)="deleteAccount()">Usuń konto</button>
-          </div>
-        } @else if (activeTab() === 'notifications') {
-          <div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="n1" [(ngModel)]="notifEmailMessages" />
-              <label for="n1">Powiadomienia email o nowych wiadomościach</label>
+
+            <div class="tab-section-title">Opcje konta</div>
+            <div class="tab-actions">
+              <button mat-stroked-button (click)="logout()">
+                <mat-icon>logout</mat-icon> Wyloguj się
+              </button>
+              <button mat-stroked-button color="warn" (click)="deleteAccount()">
+                <mat-icon>delete_forever</mat-icon> Usuń konto
+              </button>
             </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="n2" [(ngModel)]="notifSimilar" />
-              <label for="n2">Alerty o podobnych ogłoszeniach w mojej okolicy</label>
+          </mat-tab>
+
+          <mat-tab label="Powiadomienia">
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <mat-checkbox [(ngModel)]="notifEmailMessages">
+                Powiadomienia email o nowych wiadomościach
+              </mat-checkbox>
+              <mat-checkbox [(ngModel)]="notifSimilar">
+                Alerty o podobnych ogłoszeniach w mojej okolicy
+              </mat-checkbox>
+              <mat-checkbox [(ngModel)]="notifWeekly">
+                Tygodniowy raport aktywności
+              </mat-checkbox>
+              <mat-checkbox [(ngModel)]="notifPush">
+                Powiadomienia push o nowych ogłoszeniach
+              </mat-checkbox>
+              <button mat-flat-button color="primary" style="margin-top: 0.5rem; width: fit-content;" (click)="savePreferences()">
+                Zapisz preferencje
+              </button>
             </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="n3" [(ngModel)]="notifWeekly" />
-              <label for="n3">Tygodniowy raport aktywności</label>
+          </mat-tab>
+
+          <mat-tab label="Wygląd">
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div>
+                  <div style="font-weight: 600;">Motyw</div>
+                  <div style="color: var(--gray-600); font-size: 0.85rem;">
+                    {{ darkMode() ? 'Ciemny' : 'Jasny' }}
+                  </div>
+                </div>
+                <button mat-stroked-button type="button" (click)="toggleTheme()">
+                  <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+                  {{ darkMode() ? 'Włącz jasny' : 'Włącz ciemny' }}
+                </button>
+              </div>
             </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="n4" [(ngModel)]="notifPush" />
-              <label for="n4">Powiadomienia push o nowych ogłoszeniach</label>
+          </mat-tab>
+
+          <mat-tab label="Prywatność">
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <mat-checkbox [(ngModel)]="privacyHidePhone">
+                Ukryj numer telefonu w ogłoszeniach
+              </mat-checkbox>
+              <mat-checkbox [(ngModel)]="privacyBlockUnknown">
+                Blokuj nieznane wiadomości
+              </mat-checkbox>
+              <mat-checkbox [(ngModel)]="privacyTrustedOnly">
+                Pokaż tylko zaufanym użytkownikom
+              </mat-checkbox>
+              <button mat-flat-button color="primary" style="margin-top: 0.5rem; width: fit-content;" (click)="savePreferences()">
+                Zapisz preferencje
+              </button>
             </div>
-            <button class="btn btn-primary" style="margin-top: 1rem;" (click)="savePreferences()">
-              Zapisz preferencje
-            </button>
-          </div>
-        } @else if (activeTab() === 'privacy') {
-          <div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="p1" [(ngModel)]="privacyHidePhone" />
-              <label for="p1">Ukryj numer telefonu w ogłoszeniach</label>
-            </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="p2" [(ngModel)]="privacyBlockUnknown" />
-              <label for="p2">Blokuj nieznane wiadomości</label>
-            </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="p3" [(ngModel)]="privacyTrustedOnly" />
-              <label for="p3">Pokaż tylko zaufanym użytkownikom</label>
-            </div>
-            <button class="btn btn-primary" style="margin-top: 1rem;" (click)="savePreferences()">
-              Zapisz preferencje
-            </button>
-          </div>
-        }
+          </mat-tab>
+        </mat-tab-group>
       </div>
     </div>
   `,
@@ -137,19 +203,44 @@ export class SettingsComponent {
   protected privacyBlockUnknown = false;
   protected privacyTrustedOnly = false;
 
+  protected readonly darkMode = signal(localStorage.getItem('theme') === 'dark');
+
+  toggleTheme(): void {
+    this.darkMode.update((v) => !v);
+    localStorage.setItem('theme', this.darkMode() ? 'dark' : 'light');
+    if (this.darkMode()) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
+
   changePassword(): void {
     if (!this.currentPassword || !this.newPassword) {
       this.notifications.show('Wypełnij wszystkie pola');
+      return;
+    }
+    if (this.newPassword.length < 6) {
+      this.notifications.show('Nowe hasło musi mieć min. 6 znaków');
       return;
     }
     if (this.newPassword !== this.confirmPassword) {
       this.notifications.show('Hasła nie są takie same');
       return;
     }
-    this.notifications.show('Funkcja zmiany hasła wymaga rozszerzenia backendu');
-    this.currentPassword = '';
-    this.newPassword = '';
-    this.confirmPassword = '';
+    this.auth
+      .changePassword({ currentPassword: this.currentPassword, newPassword: this.newPassword })
+      .subscribe({
+        next: () => {
+          this.notifications.show('Hasło zostało zmienione');
+          this.currentPassword = '';
+          this.newPassword = '';
+          this.confirmPassword = '';
+        },
+        error: (err) => {
+          this.notifications.show(err?.error?.message ?? 'Nie udało się zmienić hasła');
+        },
+      });
   }
 
   savePreferences(): void {
@@ -163,6 +254,14 @@ export class SettingsComponent {
 
   deleteAccount(): void {
     if (!confirm('Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna.')) return;
-    this.notifications.show('Funkcja usunięcia konta wymaga rozszerzenia backendu');
+    this.auth.deleteAccount().subscribe({
+      next: () => {
+        this.notifications.show('Konto zostało usunięte');
+        this.router.navigate(['/']);
+      },
+      error: (err) => {
+        this.notifications.show(err?.error?.message ?? 'Nie udało się usunąć konta');
+      },
+    });
   }
 }

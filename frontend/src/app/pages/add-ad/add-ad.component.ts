@@ -1,8 +1,17 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
 import { Category } from '../../core/models/category.model';
+import { Listing, ListingPayload } from '../../core/models/listing.model';
+import { User } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { ImagesService } from '../../core/services/images.service';
 import { ListingService } from '../../core/services/listing.service';
@@ -11,7 +20,15 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-add-ad',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatIconModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .content-section { padding: 2rem; }
@@ -20,75 +37,106 @@ import { NotificationService } from '../../core/services/notification.service';
     }
     .section-header { display: flex; align-items: center; margin-bottom: 1.5rem; }
     .section-title { font-size: 1.25rem; font-weight: 600; }
+    .section-title:not(.visible-title) { display: none; }
     .form-card {
       max-width: 600px;
-      background: white;
+      background: var(--card);
+      border: 1px solid var(--border);
       padding: 2rem;
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-sm);
     }
     .hidden-input {
       display: none;
+    }
+    .edit-submit {
+      position: relative;
+      color: transparent !important;
+    }
+    .edit-submit::after {
+      content: 'Zapisz zmiany';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--bg);
     }
   `],
   template: `
     <div class="content-section">
       <div class="section-header">
+        <div class="section-title visible-title">{{ isEditMode() ? 'Edytuj ogłoszenie' : 'Dodaj nowe ogłoszenie' }}</div>
         <div class="section-title">Dodaj nowe ogłoszenie</div>
       </div>
 
       <form class="form-grid form-card" [formGroup]="form" (ngSubmit)="submit()">
-        <div class="form-group">
-          <label>Tytuł ogłoszenia *</label>
-          <input type="text" formControlName="title" placeholder="Np. Mieszkanie 3 pokoje do wynajęcia" />
+        <mat-form-field appearance="outline">
+          <mat-label>Tytuł ogłoszenia</mat-label>
+          <input matInput formControlName="title" placeholder="Np. Mieszkanie 3 pokoje do wynajęcia" />
           @if (showError('title', 'required')) {
-            <span class="error-text">Tytuł jest wymagany</span>
+            <mat-error>Tytuł jest wymagany</mat-error>
           }
-        </div>
+        </mat-form-field>
 
-        <div class="form-group">
-          <label>Kategoria *</label>
-          <select formControlName="category_id">
-            <option value="" disabled>-- wybierz --</option>
-            @for (cat of categories(); track cat._id) {
-              <option [value]="cat._id">{{ cat.name }}</option>
+        <mat-form-field appearance="outline">
+          <mat-label>Kategoria</mat-label>
+          <mat-select formControlName="category_id">
+            @if (categories().length === 0) {
+              <mat-option disabled value="">Brak dostępnych kategorii</mat-option>
             }
-          </select>
+            @for (cat of categories(); track cat._id) {
+              <mat-option [value]="cat._id">{{ cat.name }}</mat-option>
+            }
+          </mat-select>
           @if (showError('category_id', 'required')) {
-            <span class="error-text">Wybierz kategorię</span>
+            <mat-error>Wybierz kategorię</mat-error>
           }
-        </div>
+        </mat-form-field>
 
-        <div class="form-group">
-          <label>Cena (zł) *</label>
-          <input type="number" min="0" formControlName="price" placeholder="Cena w zł" />
+        <mat-form-field appearance="outline">
+          <mat-label>Cena (zł)</mat-label>
+          <input matInput type="number" min="0" formControlName="price" placeholder="np. 1500" />
           @if (showError('price', 'required')) {
-            <span class="error-text">Cena jest wymagana</span>
+            <mat-error>Cena jest wymagana</mat-error>
           }
           @if (showError('price', 'min')) {
-            <span class="error-text">Cena nie może być ujemna</span>
+            <mat-error>Cena nie może być ujemna</mat-error>
           }
-        </div>
+        </mat-form-field>
 
-        <div class="form-group">
-          <label>Lokalizacja *</label>
-          <input type="text" formControlName="location" placeholder="Miasto, dzielnica" />
+        <mat-form-field appearance="outline">
+          <mat-label>Lokalizacja</mat-label>
+          <mat-icon matPrefix>location_on</mat-icon>
+          <input matInput formControlName="location" placeholder="Miasto, dzielnica" />
           @if (showError('location', 'required')) {
-            <span class="error-text">Lokalizacja jest wymagana</span>
+            <mat-error>Lokalizacja jest wymagana</mat-error>
           }
-        </div>
+        </mat-form-field>
 
-        <div class="form-group">
-          <label>Opis *</label>
-          <textarea rows="5" formControlName="description" placeholder="Szczegółowy opis ogłoszenia..."></textarea>
+        <mat-form-field appearance="outline">
+          <mat-label>Opis</mat-label>
+          <textarea matInput rows="5" formControlName="description" placeholder="Szczegółowy opis ogłoszenia..."></textarea>
           @if (showError('description', 'required')) {
-            <span class="error-text">Opis jest wymagany</span>
+            <mat-error>Opis jest wymagany</mat-error>
           }
-        </div>
+        </mat-form-field>
+
+        @if (isEditMode()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Status ogłoszenia</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="active">Aktywne</mat-option>
+              <mat-option value="inactive">Nieaktywne</mat-option>
+              <mat-option value="sold">Sprzedane</mat-option>
+            </mat-select>
+          </mat-form-field>
+        }
 
         <div class="form-group">
           <label>Zdjęcia</label>
           <div class="image-upload-area" (click)="fileInput.click()">
+            <mat-icon>add_photo_alternate</mat-icon>
             Kliknij, aby dodać zdjęcia
           </div>
           <input
@@ -108,15 +156,22 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         </div>
 
-        <button class="btn btn-primary" type="submit" [disabled]="loading()">
-          {{ loading() ? 'Publikowanie...' : 'Opublikuj ogłoszenie' }}
+        <button mat-flat-button color="primary" type="submit" [class.edit-submit]="isEditMode() && !loading()" [disabled]="loading()">
+          @if (loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            Opublikuj ogłoszenie
+          }
         </button>
       </form>
     </div>
   `,
 })
 export class AddAdComponent implements OnInit {
+  readonly id = input<string>();
+
   private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
   private readonly listingService = inject(ListingService);
   private readonly categoryService = inject(CategoryService);
   private readonly imagesService = inject(ImagesService);
@@ -126,6 +181,7 @@ export class AddAdComponent implements OnInit {
   protected readonly categories = signal<Category[]>([]);
   protected readonly loading = signal(false);
   protected readonly images = signal<string[]>([]);
+  protected readonly isEditMode = computed(() => !!this.id());
 
   protected readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required]],
@@ -133,6 +189,7 @@ export class AddAdComponent implements OnInit {
     price: [0, [Validators.required, Validators.min(0)]],
     location: ['', [Validators.required]],
     description: ['', [Validators.required]],
+    status: ['active' as 'active' | 'inactive' | 'sold'],
   });
 
   ngOnInit(): void {
@@ -140,10 +197,13 @@ export class AddAdComponent implements OnInit {
       next: (cats) => this.categories.set(cats),
       error: () => this.notifications.show('Nie udało się pobrać kategorii'),
     });
+    if (this.id()) {
+      this.loadForEdit(this.id()!);
+    }
   }
 
   showError(
-    field: 'title' | 'category_id' | 'price' | 'location' | 'description',
+    field: 'title' | 'category_id' | 'price' | 'location' | 'description' | 'status',
     error: string
   ): boolean {
     const ctrl = this.form.controls[field];
@@ -163,6 +223,42 @@ export class AddAdComponent implements OnInit {
     this.images.update((list) => list.filter((_, i) => i !== index));
   }
 
+  private loadForEdit(id: string): void {
+    this.loading.set(true);
+    this.listingService.getOne(id).subscribe({
+      next: (listing) => {
+        if (!this.isOwner(listing)) {
+          this.loading.set(false);
+          this.notifications.show('Możesz edytować tylko własne ogłoszenia');
+          this.router.navigate(['/ads', id]);
+          return;
+        }
+        this.form.patchValue({
+          title: listing.title,
+          category_id: typeof listing.category_id === 'string' ? listing.category_id : listing.category_id._id,
+          price: listing.price ?? 0,
+          location: listing.location ?? '',
+          description: listing.description,
+          status: listing.status,
+        });
+        this.images.set(listing.images ?? []);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.notifications.show('Nie udało się pobrać ogłoszenia');
+        this.router.navigate(['/ads']);
+      },
+    });
+  }
+
+  private isOwner(listing: Listing): boolean {
+    const user = this.auth.user();
+    if (!user) return false;
+    const ownerId = typeof listing.user_id === 'string' ? listing.user_id : (listing.user_id as User)._id;
+    return ownerId === user._id;
+  }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -171,15 +267,20 @@ export class AddAdComponent implements OnInit {
 
     this.loading.set(true);
     const value = this.form.getRawValue();
-    this.listingService
-      .create({
-        title: value.title,
-        description: value.description,
-        price: Number(value.price),
-        location: value.location,
-        category_id: value.category_id,
-        images: this.images(),
-      })
+    const payload: ListingPayload = {
+      title: value.title,
+      description: value.description,
+      price: Number(value.price),
+      location: value.location,
+      category_id: value.category_id,
+      images: this.images(),
+      ...(this.id() ? { status: value.status } : {}),
+    };
+    const request = this.id()
+      ? this.listingService.update(this.id()!, payload)
+      : this.listingService.create(payload);
+
+    request
       .subscribe({
         next: (created) => {
           this.loading.set(false);

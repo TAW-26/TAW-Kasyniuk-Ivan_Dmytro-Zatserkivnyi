@@ -48,6 +48,12 @@ export const routes: Routes = [
         data: { title: 'Dodaj ogłoszenie' },
       },
       {
+        path: 'ads/:id/edit',
+        loadComponent: () =>
+          import('./pages/add-ad/add-ad.component').then((m) => m.AddAdComponent),
+        data: { title: 'Edytuj ogłoszenie' },
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./pages/profile/profile.component').then((m) => m.ProfileComponent),

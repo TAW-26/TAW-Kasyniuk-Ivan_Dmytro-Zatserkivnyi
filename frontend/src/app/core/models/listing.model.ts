@@ -11,7 +11,6 @@ export interface Listing {
   user_id: User | string;
   status: 'active' | 'inactive' | 'sold';
   images: string[];
-  buyer_id?: User | string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,4 +30,17 @@ export interface ListingFilters {
   category?: string;
   status?: 'active' | 'inactive' | 'sold';
   sort?: 'price_asc' | 'price_desc';
+  page?: number;
+  limit?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  location?: string;
+  ids?: string[];
+}
+
+export interface ListingsResponse {
+  listings: Listing[];
+  total: number;
+  page: number;
+  totalPages: number;
 }

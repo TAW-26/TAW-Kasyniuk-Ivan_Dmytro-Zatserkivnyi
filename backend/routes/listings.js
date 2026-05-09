@@ -7,7 +7,7 @@ const {
   update,
   remove,
   getByUser,
-  purchase,
+  markAsSold,
 } = require("../controllers/listingController");
 
 router.get("/", getAll);
@@ -15,7 +15,7 @@ router.get("/user/my", auth, getByUser);
 router.get("/:id", getOne);
 
 router.post("/", auth, create);
-router.post("/:id/purchase", auth, purchase);
+router.post("/:id/mark-sold", auth, markAsSold);
 router.put("/:id", auth, update);
 router.delete("/:id", auth, remove);
 

@@ -13,7 +13,6 @@ const Message = require("../models/Message");
     await mongoose.disconnect();
     process.exit(0);
   } catch (err) {
-    console.error("Błąd:", err);
     process.exit(1);
   }
 })();
