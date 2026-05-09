@@ -20,9 +20,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const isAuthEndpoint =
-    req.url.includes('/auth/login') ||
-    req.url.includes('/auth/register') ||
-    req.url.includes('/auth/refresh');
+    req.url.includes('/auth/login') || req.url.includes('/auth/register') || req.url.includes('/auth/refresh');
 
   return next(withAuth(auth, req)).pipe(
     catchError((err: HttpErrorResponse) => {

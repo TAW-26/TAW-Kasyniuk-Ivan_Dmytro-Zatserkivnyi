@@ -7,6 +7,19 @@ import { NotificationService } from '../../core/services/notification.service';
 import { LoginComponent } from './login.component';
 
 describe('LoginComponent', () => {
+  type LoginForm = {
+    setValue(value: { email: string; password: string }): void;
+    controls: {
+      email: { touched: boolean };
+      password: { touched: boolean };
+    };
+  };
+  type LoginComponentHarness = {
+    form: LoginForm;
+    loading: () => boolean;
+    errorMessage: () => string | null;
+  };
+
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
   let auth: { login: jest.Mock };
@@ -35,19 +48,21 @@ describe('LoginComponent', () => {
   test('marks form controls as touched when submitted empty', () => {
     component.submit();
 
-    const form = (component as any).form;
+    const form = (component as unknown as LoginComponentHarness).form;
     expect(auth.login).not.toHaveBeenCalled();
     expect(form.controls.email.touched).toBe(true);
     expect(form.controls.password.touched).toBe(true);
   });
 
   test('logs in and navigates to ads page on valid credentials', () => {
-    auth.login.mockReturnValue(of({
-      accessToken: 'token',
-      user: { _id: 'u1', username: 'Jan', email: 'jan@example.com', role: 'user' },
-    }));
+    auth.login.mockReturnValue(
+      of({
+        accessToken: 'token',
+        user: { _id: 'u1', username: 'Jan', email: 'jan@example.com', role: 'user' },
+      }),
+    );
 
-    (component as any).form.setValue({
+    (component as unknown as LoginComponentHarness).form.setValue({
       email: 'jan@example.com',
       password: 'secret123',
     });
@@ -59,21 +74,23 @@ describe('LoginComponent', () => {
     });
     expect(notifications.show).toHaveBeenCalledWith(expect.stringContaining('Zalogowano'));
     expect(router.navigate).toHaveBeenCalledWith(['/ads']);
-    expect((component as any).loading()).toBe(false);
+    expect((component as unknown as LoginComponentHarness).loading()).toBe(false);
   });
 
   test('shows backend error message when login fails', () => {
-    auth.login.mockReturnValue(throwError(() => ({
-      error: { message: 'Nieprawidlowe dane' },
-    })));
+    auth.login.mockReturnValue(
+      throwError(() => ({
+        error: { message: 'Nieprawidlowe dane' },
+      })),
+    );
 
-    (component as any).form.setValue({
+    (component as unknown as LoginComponentHarness).form.setValue({
       email: 'jan@example.com',
       password: 'wrong',
     });
     component.submit();
 
-    expect((component as any).errorMessage()).toBe('Nieprawidlowe dane');
-    expect((component as any).loading()).toBe(false);
+    expect((component as unknown as LoginComponentHarness).errorMessage()).toBe('Nieprawidlowe dane');
+    expect((component as unknown as LoginComponentHarness).loading()).toBe(false);
   });
 });

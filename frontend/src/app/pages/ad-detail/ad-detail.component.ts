@@ -15,210 +15,224 @@ import { NotificationService } from '../../core/services/notification.service';
   standalone: true,
   imports: [RouterLink, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .public-shell {
-      min-height: 100vh;
-      background: var(--bg);
-    }
-    .topbar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-    .topbar-brand {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .topbar-actions {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .topbar-actions .username {
-      color: var(--gray-700);
-      font-weight: 500;
-      margin-right: 0.5rem;
-    }
-    .content-section { padding: 2rem; max-width: 1200px; margin: 0 auto; }
-    @media (max-width: 768px) {
-      .topbar { padding: 0.75rem 1rem; }
-      .content-section { padding: 1rem; }
-    }
+  styles: [
+    `
+      .public-shell {
+        min-height: 100vh;
+        background: var(--bg);
+      }
+      .topbar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .topbar-brand {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .topbar-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .topbar-actions .username {
+        color: var(--gray-700);
+        font-weight: 500;
+        margin-right: 0.5rem;
+      }
+      .content-section {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      @media (max-width: 768px) {
+        .topbar {
+          padding: 0.75rem 1rem;
+        }
+        .content-section {
+          padding: 1rem;
+        }
+      }
 
-    .detail-container {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 2rem;
-      max-width: 900px;
-      margin: 0 auto;
-      box-shadow: var(--shadow);
-    }
+      .detail-container {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+        box-shadow: var(--shadow);
+      }
 
-    .detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+      .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
 
-    .detail-header h2 { flex: 1; }
+      .detail-header h2 {
+        flex: 1;
+      }
 
-    .gallery {
-      margin-bottom: 1.5rem;
-    }
+      .gallery {
+        margin-bottom: 1.5rem;
+      }
 
-    .gallery-main {
-      width: 100%;
-      height: 400px;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      background: var(--gray-100);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 1rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
+      .gallery-main {
+        width: 100%;
+        height: 400px;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 1rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
 
-    .gallery-main img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background: var(--gray-100);
-    }
+      .gallery-main img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: var(--gray-100);
+      }
 
-    .gallery-thumbs {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-      flex-wrap: wrap;
-    }
+      .gallery-thumbs {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
 
-    .gallery-thumb {
-      width: 80px;
-      height: 80px;
-      border-radius: var(--radius);
-      overflow: hidden;
-      cursor: pointer;
-      border: 2px solid transparent;
-      background: var(--gray-100);
-      padding: 0;
-      transition: border-color 0.2s;
-    }
+      .gallery-thumb {
+        width: 80px;
+        height: 80px;
+        border-radius: var(--radius);
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        background: var(--gray-100);
+        padding: 0;
+        transition: border-color 0.2s;
+      }
 
-    .gallery-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+      .gallery-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
 
-    .gallery-thumb.active {
-      border-color: var(--primary);
-    }
+      .gallery-thumb.active {
+        border-color: var(--primary);
+      }
 
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      align-items: center;
-      margin: 0.5rem 0 1.5rem;
-      color: var(--gray-600);
-      font-size: 0.875rem;
-    }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        margin: 0.5rem 0 1.5rem;
+        color: var(--gray-600);
+        font-size: 0.875rem;
+      }
 
-    .description {
-      margin: 1rem 0;
-      line-height: 1.6;
-      white-space: pre-line;
-    }
+      .description {
+        margin: 1rem 0;
+        line-height: 1.6;
+        white-space: pre-line;
+      }
 
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--text);
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 0.55rem 0.85rem;
-      cursor: pointer;
-      margin-bottom: 1.25rem;
-      font-weight: 500;
-      font-size: 0.9rem;
-      transition: background 0.2s, border-color 0.2s;
-    }
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.55rem 0.85rem;
+        cursor: pointer;
+        margin-bottom: 1.25rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
 
-    .back-link:hover {
-      background: var(--gray-100);
-      border-color: var(--text);
-    }
+      .back-link:hover {
+        background: var(--gray-100);
+        border-color: var(--text);
+      }
 
-    .back-link mat-icon {
-      font-size: 1.1rem;
-      width: 1.1rem;
-      height: 1.1rem;
-    }
+      .back-link mat-icon {
+        font-size: 1.1rem;
+        width: 1.1rem;
+        height: 1.1rem;
+      }
 
-    .divider {
-      border: none;
-      border-top: 1px solid var(--gray-200);
-      margin: 1.5rem 0;
-    }
+      .divider {
+        border: none;
+        border-top: 1px solid var(--gray-200);
+        margin: 1.5rem 0;
+      }
 
-    .seller-card {
-      background: var(--gray-50);
-      padding: 1rem 1.25rem;
-      border-radius: var(--radius);
-      border: 1px solid var(--gray-200);
-    }
+      .seller-card {
+        background: var(--gray-50);
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--gray-200);
+      }
 
-    .seller-card .seller-name {
-      font-weight: 600;
-      margin-bottom: 0.4rem;
-    }
+      .seller-card .seller-name {
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+      }
 
-    .seller-contact {
-      color: var(--gray-700);
-      font-size: 0.9rem;
-      margin-top: 0.25rem;
-    }
+      .seller-contact {
+        color: var(--gray-700);
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+      }
 
-    .badge-sold {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
+      .badge-sold {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
 
-    .badges-row {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+      .badges-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
 
-    .badges-row .badge {
-      display: inline-block;
-    }
-  `],
+      .badges-row .badge {
+        display: inline-block;
+      }
+    `,
+  ],
   template: `
     <div class="public-shell">
       <header class="topbar">
@@ -231,117 +245,119 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
       </header>
 
-    <div class="content-section">
-      <button class="back-link" type="button" (click)="back()">
-        <mat-icon>arrow_back</mat-icon>
-        Powrót do ogłoszeń
-      </button>
+      <div class="content-section">
+        <button class="back-link" type="button" (click)="back()">
+          <mat-icon>arrow_back</mat-icon>
+          Powrót do ogłoszeń
+        </button>
 
-      @if (loading()) {
-        <div class="empty-state">
-          <h3>Ładowanie ogłoszenia...</h3>
-        </div>
-      } @else if (!listing()) {
-        <div class="empty-state">
-          <h3>Ogłoszenie nie zostało znalezione</h3>
-        </div>
-      } @else {
-        <div class="detail-container">
-          <div class="detail-header">
-            <h2>{{ listing()!.title }}</h2>
-            <button
-              type="button"
-              class="favorite-btn"
-              [class.active]="isFav()"
-              (click)="toggleFavorite()"
-              [attr.aria-label]="isFav() ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'">
-              {{ isFav() ? '❤️' : '🤍' }}
-            </button>
+        @if (loading()) {
+          <div class="empty-state">
+            <h3>Ładowanie ogłoszenia...</h3>
           </div>
-
-          <div class="gallery">
-            <div class="gallery-main">
-              @if (currentImage()) {
-                <img [src]="currentImage()" [alt]="listing()!.title" />
-              } @else {
-                <span>Brak zdjęć</span>
-              }
+        } @else if (!listing()) {
+          <div class="empty-state">
+            <h3>Ogłoszenie nie zostało znalezione</h3>
+          </div>
+        } @else {
+          <div class="detail-container">
+            <div class="detail-header">
+              <h2>{{ listing()!.title }}</h2>
+              <button
+                type="button"
+                class="favorite-btn"
+                [class.active]="isFav()"
+                (click)="toggleFavorite()"
+                [attr.aria-label]="isFav() ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
+              >
+                {{ isFav() ? '❤️' : '🤍' }}
+              </button>
             </div>
-            @if (gallery().length > 1) {
-              <div class="gallery-thumbs">
-                @for (img of gallery(); track $index) {
-                  <button
-                    type="button"
-                    class="gallery-thumb"
-                    [class.active]="$index === activeIndex()"
-                    (click)="activeIndex.set($index)">
-                    <img [src]="img" [alt]="'Zdjęcie ' + ($index + 1)" />
-                  </button>
+
+            <div class="gallery">
+              <div class="gallery-main">
+                @if (currentImage()) {
+                  <img [src]="currentImage()" [alt]="listing()!.title" />
+                } @else {
+                  <span>Brak zdjęć</span>
                 }
               </div>
-            }
+              @if (gallery().length > 1) {
+                <div class="gallery-thumbs">
+                  @for (img of gallery(); track $index) {
+                    <button
+                      type="button"
+                      class="gallery-thumb"
+                      [class.active]="$index === activeIndex()"
+                      (click)="activeIndex.set($index)"
+                    >
+                      <img [src]="img" [alt]="'Zdjęcie ' + ($index + 1)" />
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="badges-row">
+              <div class="badge badge-active">{{ categoryName() }}</div>
+              @if (listing()!.status === 'sold') {
+                <span class="badge-sold">Sprzedane</span>
+              }
+            </div>
+            <div class="detail-price">{{ formattedPrice() }}</div>
+            <div class="ad-location">{{ listing()!.location || '—' }}</div>
+
+            <div class="meta">
+              <span>Dodano: {{ formattedDate() }}</span>
+              <span>•</span>
+              <span>Status: {{ listing()!.status }}</span>
+            </div>
+
+            <p class="description">{{ listing()!.description }}</p>
+
+            <hr class="divider" />
+
+            <div class="seller-card">
+              <div class="seller-name">Sprzedawca: {{ sellerName() }}</div>
+              @if (sellerPhone()) {
+                <div class="seller-contact">Telefon: {{ sellerPhone() }}</div>
+              }
+            </div>
+
+            <div class="contact-buttons">
+              @if (isOwner()) {
+                <a class="btn btn-outline" [routerLink]="['/ads', listing()!._id, 'edit']">
+                  <mat-icon>edit</mat-icon>
+                  Edytuj
+                </a>
+              }
+              @if (canMarkSold()) {
+                <button class="btn btn-outline" (click)="markAsSold()" [disabled]="marking()">
+                  {{ marking() ? 'Zapisywanie...' : 'Oznacz jako sprzedane' }}
+                </button>
+              }
+              @if (canBuyIntent()) {
+                <button class="btn btn-primary" (click)="wantToBuy()">Chcę kupić</button>
+              }
+              @if (canMessage()) {
+                <button class="btn btn-outline" (click)="openChat()">Napisz</button>
+              }
+              @if (sellerPhone() && !isOwner()) {
+                <a class="btn btn-outline" [href]="'tel:' + sellerPhone()">Zadzwoń</a>
+              }
+              @if (canDelete()) {
+                <button mat-stroked-button color="warn" (click)="remove()">
+                  <mat-icon>delete</mat-icon>
+                  {{ auth.isAdmin() && !isOwner() ? 'Usuń (admin)' : 'Usuń ogłoszenie' }}
+                </button>
+              }
+              @if (!auth.isLoggedIn() && listing()!.status !== 'sold') {
+                <a class="btn btn-primary" routerLink="/login">Zaloguj się, aby napisać do sprzedawcy</a>
+              }
+            </div>
           </div>
-
-          <div class="badges-row">
-            <div class="badge badge-active">{{ categoryName() }}</div>
-            @if (listing()!.status === 'sold') {
-              <span class="badge-sold">Sprzedane</span>
-            }
-          </div>
-          <div class="detail-price">{{ formattedPrice() }}</div>
-          <div class="ad-location">{{ listing()!.location || '—' }}</div>
-
-          <div class="meta">
-            <span>Dodano: {{ formattedDate() }}</span>
-            <span>•</span>
-            <span>Status: {{ listing()!.status }}</span>
-          </div>
-
-          <p class="description">{{ listing()!.description }}</p>
-
-          <hr class="divider" />
-
-          <div class="seller-card">
-            <div class="seller-name">Sprzedawca: {{ sellerName() }}</div>
-            @if (sellerPhone()) {
-              <div class="seller-contact">Telefon: {{ sellerPhone() }}</div>
-            }
-          </div>
-
-          <div class="contact-buttons">
-            @if (isOwner()) {
-              <a class="btn btn-outline" [routerLink]="['/ads', listing()!._id, 'edit']">
-                <mat-icon>edit</mat-icon>
-                Edytuj
-              </a>
-            }
-            @if (canMarkSold()) {
-              <button class="btn btn-outline" (click)="markAsSold()" [disabled]="marking()">
-                {{ marking() ? 'Zapisywanie...' : 'Oznacz jako sprzedane' }}
-              </button>
-            }
-            @if (canBuyIntent()) {
-              <button class="btn btn-primary" (click)="wantToBuy()">Chcę kupić</button>
-            }
-            @if (canMessage()) {
-              <button class="btn btn-outline" (click)="openChat()">Napisz</button>
-            }
-            @if (sellerPhone() && !isOwner()) {
-              <a class="btn btn-outline" [href]="'tel:' + sellerPhone()">Zadzwoń</a>
-            }
-            @if (canDelete()) {
-              <button mat-stroked-button color="warn" (click)="remove()">
-                <mat-icon>delete</mat-icon>
-                {{ auth.isAdmin() && !isOwner() ? 'Usuń (admin)' : 'Usuń ogłoszenie' }}
-              </button>
-            }
-            @if (!auth.isLoggedIn() && listing()!.status !== 'sold') {
-              <a class="btn btn-primary" routerLink="/login">Zaloguj się, aby napisać do sprzedawcy</a>
-            }
-          </div>
-        </div>
-      }
-    </div>
+        }
+      </div>
     </div>
   `,
 })
@@ -358,7 +374,6 @@ export class AdDetailComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly activeIndex = signal(0);
   protected readonly marking = signal(false);
-  protected readonly darkMode = signal(localStorage.getItem('theme') === 'dark');
 
   protected readonly gallery = computed<string[]>(() => this.listing()?.images ?? []);
 
@@ -444,22 +459,7 @@ export class AdDetailComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.applyTheme();
     this.load();
-  }
-
-  toggleTheme(): void {
-    this.darkMode.update((value) => !value);
-    localStorage.setItem('theme', this.darkMode() ? 'dark' : 'light');
-    this.applyTheme();
-  }
-
-  private applyTheme(): void {
-    if (this.darkMode()) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
   }
 
   private load(): void {

@@ -10,8 +10,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 
-type Tab = 'account' | 'notifications' | 'privacy';
-
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -25,44 +23,70 @@ type Tab = 'account' | 'notifications' | 'privacy';
     MatIconModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .content-section { padding: 2rem; }
-    @media (max-width: 768px) { .content-section { padding: 1rem; } }
-    .section-header { display: flex; align-items: center; margin-bottom: 1.5rem; }
-    .section-title { font-size: 1.25rem; font-weight: 600; }
-    .settings-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 2rem;
-      border-radius: var(--radius-lg);
-      max-width: 600px;
-      box-shadow: var(--shadow-sm);
-    }
-    hr { border: none; border-top: 1px solid var(--gray-200); margin: 1.25rem 0; }
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0;
-    }
-    .checkbox-row input[type="checkbox"] {
-      width: auto;
-    }
-    .tab-section { margin-top: 1.5rem; }
-    .tab-section-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 1rem;
-    }
-    .tab-actions { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
-    .field-error {
-      color: var(--danger);
-      font-size: 0.75rem;
-      margin-top: -0.5rem;
-      margin-bottom: 0.25rem;
-    }
-  `],
+  styles: [
+    `
+      .content-section {
+        padding: 2rem;
+      }
+      @media (max-width: 768px) {
+        .content-section {
+          padding: 1rem;
+        }
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      .settings-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        max-width: 600px;
+        box-shadow: var(--shadow-sm);
+      }
+      hr {
+        border: none;
+        border-top: 1px solid var(--gray-200);
+        margin: 1.25rem 0;
+      }
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0;
+      }
+      .checkbox-row input[type='checkbox'] {
+        width: auto;
+      }
+      .tab-section {
+        margin-top: 1.5rem;
+      }
+      .tab-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 1rem;
+      }
+      .tab-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+      }
+      .field-error {
+        color: var(--danger);
+        font-size: 0.75rem;
+        margin-top: -0.5rem;
+        margin-bottom: 0.25rem;
+      }
+    `,
+  ],
   template: `
     <div class="content-section">
       <div class="section-header">
@@ -77,8 +101,15 @@ type Tab = 'account' | 'notifications' | 'privacy';
               <div class="form-grid">
                 <mat-form-field appearance="outline">
                   <mat-label>Aktualne hasło</mat-label>
-                  <input matInput type="password" [(ngModel)]="currentPassword" name="currentPassword"
-                    placeholder="Wprowadź aktualne hasło" #curPw="ngModel" required />
+                  <input
+                    matInput
+                    type="password"
+                    [(ngModel)]="currentPassword"
+                    name="currentPassword"
+                    placeholder="Wprowadź aktualne hasło"
+                    #curPw="ngModel"
+                    required
+                  />
                   @if (curPw.touched && curPw.errors?.['required']) {
                     <mat-error>Pole wymagane</mat-error>
                   }
@@ -86,8 +117,16 @@ type Tab = 'account' | 'notifications' | 'privacy';
 
                 <mat-form-field appearance="outline">
                   <mat-label>Nowe hasło</mat-label>
-                  <input matInput type="password" [(ngModel)]="newPassword" name="newPassword"
-                    placeholder="Min. 6 znaków" #newPw="ngModel" required minlength="6" />
+                  <input
+                    matInput
+                    type="password"
+                    [(ngModel)]="newPassword"
+                    name="newPassword"
+                    placeholder="Min. 6 znaków"
+                    #newPw="ngModel"
+                    required
+                    minlength="6"
+                  />
                   @if (newPw.touched && newPw.errors?.['required']) {
                     <mat-error>Pole wymagane</mat-error>
                   }
@@ -98,8 +137,15 @@ type Tab = 'account' | 'notifications' | 'privacy';
 
                 <mat-form-field appearance="outline">
                   <mat-label>Powtórz nowe hasło</mat-label>
-                  <input matInput type="password" [(ngModel)]="confirmPassword" name="confirmPassword"
-                    placeholder="Powtórz nowe hasło" #confPw="ngModel" required />
+                  <input
+                    matInput
+                    type="password"
+                    [(ngModel)]="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Powtórz nowe hasło"
+                    #confPw="ngModel"
+                    required
+                  />
                   @if (confPw.touched && confirmPassword && newPassword !== confirmPassword) {
                     <mat-error>Hasła nie są takie same</mat-error>
                   }
@@ -116,9 +162,7 @@ type Tab = 'account' | 'notifications' | 'privacy';
 
             <div class="tab-section-title">Opcje konta</div>
             <div class="tab-actions">
-              <button mat-stroked-button (click)="logout()">
-                <mat-icon>logout</mat-icon> Wyloguj się
-              </button>
+              <button mat-stroked-button (click)="logout()"><mat-icon>logout</mat-icon> Wyloguj się</button>
               <button mat-stroked-button color="warn" (click)="deleteAccount()">
                 <mat-icon>delete_forever</mat-icon> Usuń konto
               </button>
@@ -127,19 +171,16 @@ type Tab = 'account' | 'notifications' | 'privacy';
 
           <mat-tab label="Powiadomienia">
             <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
-              <mat-checkbox [(ngModel)]="notifEmailMessages">
-                Powiadomienia email o nowych wiadomościach
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="notifSimilar">
-                Alerty o podobnych ogłoszeniach w mojej okolicy
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="notifWeekly">
-                Tygodniowy raport aktywności
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="notifPush">
-                Powiadomienia push o nowych ogłoszeniach
-              </mat-checkbox>
-              <button mat-flat-button color="primary" style="margin-top: 0.5rem; width: fit-content;" (click)="savePreferences()">
+              <mat-checkbox [(ngModel)]="notifEmailMessages"> Powiadomienia email o nowych wiadomościach </mat-checkbox>
+              <mat-checkbox [(ngModel)]="notifSimilar"> Alerty o podobnych ogłoszeniach w mojej okolicy </mat-checkbox>
+              <mat-checkbox [(ngModel)]="notifWeekly"> Tygodniowy raport aktywności </mat-checkbox>
+              <mat-checkbox [(ngModel)]="notifPush"> Powiadomienia push o nowych ogłoszeniach </mat-checkbox>
+              <button
+                mat-flat-button
+                color="primary"
+                style="margin-top: 0.5rem; width: fit-content;"
+                (click)="savePreferences()"
+              >
                 Zapisz preferencje
               </button>
             </div>
@@ -164,16 +205,15 @@ type Tab = 'account' | 'notifications' | 'privacy';
 
           <mat-tab label="Prywatność">
             <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
-              <mat-checkbox [(ngModel)]="privacyHidePhone">
-                Ukryj numer telefonu w ogłoszeniach
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="privacyBlockUnknown">
-                Blokuj nieznane wiadomości
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="privacyTrustedOnly">
-                Pokaż tylko zaufanym użytkownikom
-              </mat-checkbox>
-              <button mat-flat-button color="primary" style="margin-top: 0.5rem; width: fit-content;" (click)="savePreferences()">
+              <mat-checkbox [(ngModel)]="privacyHidePhone"> Ukryj numer telefonu w ogłoszeniach </mat-checkbox>
+              <mat-checkbox [(ngModel)]="privacyBlockUnknown"> Blokuj nieznane wiadomości </mat-checkbox>
+              <mat-checkbox [(ngModel)]="privacyTrustedOnly"> Pokaż tylko zaufanym użytkownikom </mat-checkbox>
+              <button
+                mat-flat-button
+                color="primary"
+                style="margin-top: 0.5rem; width: fit-content;"
+                (click)="savePreferences()"
+              >
                 Zapisz preferencje
               </button>
             </div>
@@ -187,8 +227,6 @@ export class SettingsComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
-
-  protected readonly activeTab = signal<Tab>('account');
 
   protected currentPassword = '';
   protected newPassword = '';
@@ -228,19 +266,17 @@ export class SettingsComponent {
       this.notifications.show('Hasła nie są takie same');
       return;
     }
-    this.auth
-      .changePassword({ currentPassword: this.currentPassword, newPassword: this.newPassword })
-      .subscribe({
-        next: () => {
-          this.notifications.show('Hasło zostało zmienione');
-          this.currentPassword = '';
-          this.newPassword = '';
-          this.confirmPassword = '';
-        },
-        error: (err) => {
-          this.notifications.show(err?.error?.message ?? 'Nie udało się zmienić hasła');
-        },
-      });
+    this.auth.changePassword({ currentPassword: this.currentPassword, newPassword: this.newPassword }).subscribe({
+      next: () => {
+        this.notifications.show('Hasło zostało zmienione');
+        this.currentPassword = '';
+        this.newPassword = '';
+        this.confirmPassword = '';
+      },
+      error: (err) => {
+        this.notifications.show(err?.error?.message ?? 'Nie udało się zmienić hasła');
+      },
+    });
   }
 
   savePreferences(): void {

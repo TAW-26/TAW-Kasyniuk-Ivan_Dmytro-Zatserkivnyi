@@ -10,6 +10,26 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AddAdComponent } from './add-ad.component';
 
 describe('AddAdComponent', () => {
+  type AddAdForm = {
+    setValue(value: {
+      title: string;
+      category_id: string;
+      price: number;
+      location: string;
+      description: string;
+      status: 'active' | 'inactive' | 'sold';
+    }): void;
+    controls: {
+      title: { touched: boolean };
+      category_id: { touched: boolean };
+    };
+  };
+  type AddAdComponentHarness = {
+    form: AddAdForm;
+    images: { set(value: string[]): void };
+    loading: () => boolean;
+  };
+
   let fixture: ComponentFixture<AddAdComponent>;
   let component: AddAdComponent;
   let listingService: { create: jest.Mock; update: jest.Mock; getOne: jest.Mock };
@@ -43,28 +63,30 @@ describe('AddAdComponent', () => {
   test('does not submit when required listing fields are missing', () => {
     component.submit();
 
-    const form = (component as any).form;
+    const form = (component as unknown as AddAdComponentHarness).form;
     expect(listingService.create).not.toHaveBeenCalled();
     expect(form.controls.title.touched).toBe(true);
     expect(form.controls.category_id.touched).toBe(true);
   });
 
   test('creates listing with form values and selected images', () => {
-    listingService.create.mockReturnValue(of({
-      _id: 'l1',
-      title: 'Telefon',
-      description: 'Sprawny telefon',
-      price: 500,
-      location: 'Warszawa',
-      category_id: 'c1',
-      user_id: 'u1',
-      status: 'active',
-      images: ['img-data'],
-      createdAt: '',
-      updatedAt: '',
-    }));
+    listingService.create.mockReturnValue(
+      of({
+        _id: 'l1',
+        title: 'Telefon',
+        description: 'Sprawny telefon',
+        price: 500,
+        location: 'Warszawa',
+        category_id: 'c1',
+        user_id: 'u1',
+        status: 'active',
+        images: ['img-data'],
+        createdAt: '',
+        updatedAt: '',
+      }),
+    );
 
-    (component as any).form.setValue({
+    (component as unknown as AddAdComponentHarness).form.setValue({
       title: 'Telefon',
       category_id: 'c1',
       price: 500,
@@ -72,7 +94,7 @@ describe('AddAdComponent', () => {
       description: 'Sprawny telefon',
       status: 'active',
     });
-    (component as any).images.set(['img-data']);
+    (component as unknown as AddAdComponentHarness).images.set(['img-data']);
     component.submit();
 
     expect(listingService.create).toHaveBeenCalledWith({
@@ -84,6 +106,6 @@ describe('AddAdComponent', () => {
       images: ['img-data'],
     });
     expect(router.navigate).toHaveBeenCalledWith(['/ads', 'l1']);
-    expect((component as any).loading()).toBe(false);
+    expect((component as unknown as AddAdComponentHarness).loading()).toBe(false);
   });
 });

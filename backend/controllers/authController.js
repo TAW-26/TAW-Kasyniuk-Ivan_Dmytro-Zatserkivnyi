@@ -1,45 +1,45 @@
-const crypto = require("crypto");
-const mongoose = require("mongoose");
-const User = require("../models/User");
-const Listing = require("../models/Listing");
-const Message = require("../models/Message");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const crypto = require('crypto');
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Listing = require('../models/Listing');
+const Message = require('../models/Message');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-const IS_DEV = process.env.NODE_ENV !== "production";
+const IS_DEV = process.env.NODE_ENV !== 'production';
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 const REFRESH_COOKIE = {
   httpOnly: true,
   secure: !IS_DEV,
-  sameSite: "lax",
+  sameSite: 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: "/api/auth",
+  path: '/api/auth',
 };
 
 function signAccess(id) {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '15m' });
 }
 
 function signRefresh(id) {
-  return jwt.sign({ id }, REFRESH_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id }, REFRESH_SECRET, { expiresIn: '7d' });
 }
 
 function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 exports.register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
-      return res.status(400).json({ message: "Wszystkie pola są wymagane" });
+      return res.status(400).json({ message: 'Wszystkie pola są wymagane' });
     }
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: "Użytkownik już istnieje" });
+    if (exists) return res.status(400).json({ message: 'Użytkownik już istnieje' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = IS_DEV ? undefined : crypto.randomBytes(32).toString("hex");
+    const verificationToken = IS_DEV ? undefined : crypto.randomBytes(32).toString('hex');
 
     const user = await User.create({
       username,
@@ -50,7 +50,7 @@ exports.register = async (req, res, next) => {
     });
 
     if (!IS_DEV) {
-      const verifyUrl = `${process.env.FRONTEND_URL || "http://localhost:4200"}/verify-email?token=${verificationToken}`;
+      const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/verify-email?token=${verificationToken}`;
       console.log(`[VERIFY EMAIL] ${email} → ${verifyUrl}`);
     }
 
@@ -65,18 +65,18 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ message: "Email i hasło są wymagane" });
+      return res.status(400).json({ message: 'Email i hasło są wymagane' });
     }
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).json({ message: "Nieprawidłowe hasło" });
+    if (!valid) return res.status(400).json({ message: 'Nieprawidłowe hasło' });
 
     if (!IS_DEV && !user.isVerified) {
       return res.status(403).json({
-        message: "Konto nie zostało zweryfikowane. Sprawdź skrzynkę pocztową.",
-        code: "EMAIL_NOT_VERIFIED",
+        message: 'Konto nie zostało zweryfikowane. Sprawdź skrzynkę pocztową.',
+        code: 'EMAIL_NOT_VERIFIED',
       });
     }
 
@@ -86,7 +86,7 @@ exports.login = async (req, res, next) => {
     user.refreshToken = hashToken(refreshToken);
     await user.save();
 
-    res.cookie("refreshToken", refreshToken, REFRESH_COOKIE);
+    res.cookie('refreshToken', refreshToken, REFRESH_COOKIE);
 
     const { password: _p, verificationToken: _v, refreshToken: _r, ...userData } = user.toObject();
     res.json({ user: userData, accessToken });
@@ -98,17 +98,20 @@ exports.login = async (req, res, next) => {
 exports.refresh = async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken;
-    if (!token) return res.status(401).json({ message: "Brak tokenu odświeżającego" });
+    if (!token) return res.status(401).json({ message: 'Brak tokenu odświeżającego' });
 
     let payload;
     try {
       payload = jwt.verify(token, REFRESH_SECRET);
     } catch {
-      return res.status(401).json({ message: "Token odświeżający wygasł lub jest nieprawidłowy" });
+      return res.status(401).json({ message: 'Token odświeżający wygasł lub jest nieprawidłowy' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(payload.id)) {
+      return res.status(401).json({ message: 'Token odświeżający wygasł lub jest nieprawidłowy' });
     }
 
-    const user = await User.findOne({ _id: payload.id, refreshToken: hashToken(token) }).select("+refreshToken");
-    if (!user) return res.status(401).json({ message: "Token odświeżający unieważniony" });
+    const user = await User.findOne({ _id: payload.id, refreshToken: hashToken(token) }).select('+refreshToken');
+    if (!user) return res.status(401).json({ message: 'Token odświeżający unieważniony' });
 
     const accessToken = signAccess(user._id);
     res.json({ accessToken });
@@ -121,13 +124,10 @@ exports.logout = async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken;
     if (token) {
-      await User.findOneAndUpdate(
-        { refreshToken: hashToken(token) },
-        { $unset: { refreshToken: 1 } }
-      );
+      await User.findOneAndUpdate({ refreshToken: hashToken(token) }, { $unset: { refreshToken: 1 } });
     }
-    res.clearCookie("refreshToken", { ...REFRESH_COOKIE, maxAge: 0 });
-    res.json({ message: "Wylogowano" });
+    res.clearCookie('refreshToken', { ...REFRESH_COOKIE, maxAge: 0 });
+    res.json({ message: 'Wylogowano' });
   } catch (err) {
     next(err);
   }
@@ -136,12 +136,12 @@ exports.logout = async (req, res, next) => {
 exports.verifyEmail = async (req, res, next) => {
   try {
     const { token } = req.params;
-    const user = await User.findOne({ verificationToken: token, isVerified: false }).select("+verificationToken");
-    if (!user) return res.status(400).json({ message: "Nieprawidłowy lub wygasły link weryfikacyjny" });
+    const user = await User.findOne({ verificationToken: token, isVerified: false }).select('+verificationToken');
+    if (!user) return res.status(400).json({ message: 'Nieprawidłowy lub wygasły link weryfikacyjny' });
     user.isVerified = true;
     user.verificationToken = undefined;
     await user.save();
-    res.json({ message: "Email zweryfikowany — możesz się teraz zalogować" });
+    res.json({ message: 'Email zweryfikowany — możesz się teraz zalogować' });
   } catch (err) {
     next(err);
   }
@@ -149,8 +149,8 @@ exports.verifyEmail = async (req, res, next) => {
 
 exports.me = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
     res.json(user);
   } catch (err) {
     next(err);
@@ -159,28 +159,28 @@ exports.me = async (req, res, next) => {
 
 exports.updateMe = async (req, res, next) => {
   try {
-    const allowed = ["username", "phone", "avatar"];
+    const allowed = ['username', 'phone', 'avatar'];
     const updates = {};
     for (const key of allowed) {
-      if (key in req.body && typeof req.body[key] === "string") {
+      if (key in req.body && typeof req.body[key] === 'string') {
         updates[key] = req.body[key].trim();
       }
     }
     if (updates.username !== undefined && updates.username.length < 2) {
-      return res.status(400).json({ message: "Imię i nazwisko musi mieć min. 2 znaki" });
+      return res.status(400).json({ message: 'Imię i nazwisko musi mieć min. 2 znaki' });
     }
     if (updates.avatar !== undefined) {
-      const isEmpty = updates.avatar === "";
+      const isEmpty = updates.avatar === '';
       const isImageDataUrl = /^data:image\/(png|jpe?g|webp);base64,/i.test(updates.avatar);
       if (!isEmpty && (!isImageDataUrl || updates.avatar.length > 5_000_000)) {
-        return res.status(400).json({ message: "Avatar musi być obrazem PNG, JPG lub WebP do 5 MB" });
+        return res.status(400).json({ message: 'Avatar musi być obrazem PNG, JPG lub WebP do 5 MB' });
       }
     }
     const user = await User.findByIdAndUpdate(req.user.id, updates, {
       new: true,
       runValidators: true,
-    }).select("-password");
-    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+    }).select('-password');
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
     res.json(user);
   } catch (err) {
     next(err);
@@ -191,22 +191,22 @@ exports.changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Aktualne i nowe hasło są wymagane" });
+      return res.status(400).json({ message: 'Aktualne i nowe hasło są wymagane' });
     }
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "Nowe hasło musi mieć min. 6 znaków" });
+      return res.status(400).json({ message: 'Nowe hasło musi mieć min. 6 znaków' });
     }
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
     const valid = await bcrypt.compare(currentPassword, user.password);
-    if (!valid) return res.status(400).json({ message: "Nieprawidłowe aktualne hasło" });
+    if (!valid) return res.status(400).json({ message: 'Nieprawidłowe aktualne hasło' });
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.refreshToken = undefined;
     await user.save();
 
-    res.clearCookie("refreshToken", { ...REFRESH_COOKIE, maxAge: 0 });
-    res.json({ message: "Hasło zostało zmienione. Zaloguj się ponownie." });
+    res.clearCookie('refreshToken', { ...REFRESH_COOKIE, maxAge: 0 });
+    res.json({ message: 'Hasło zostało zmienione. Zaloguj się ponownie.' });
   } catch (err) {
     next(err);
   }
@@ -216,16 +216,21 @@ exports.toggleFavorite = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Nieprawidłowy ID ogłoszenia" });
+      return res.status(400).json({ message: 'Nieprawidłowy ID ogłoszenia' });
     }
-    const user = await User.findById(req.user.id).select("favorites");
-    if (!user) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
-    const isFav = (user.favorites ?? []).some((f) => f.toString() === id);
+    const user = await User.findById(req.user.id).select('favorites');
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+    const isFavorite = (user.favorites ?? []).some((favoriteId) => favoriteId.toString() === id);
+    if (!isFavorite) {
+      const listingExists = await Listing.exists({ _id: id });
+      if (!listingExists) return res.status(404).json({ message: 'Ogłoszenie nie znalezione' });
+    }
+
     const updated = await User.findByIdAndUpdate(
       req.user.id,
-      isFav ? { $pull: { favorites: id } } : { $addToSet: { favorites: id } },
-      { new: true }
-    ).select("favorites");
+      isFavorite ? { $pull: { favorites: id } } : { $addToSet: { favorites: id } },
+      { new: true },
+    ).select('favorites');
     res.json({ favorites: (updated?.favorites ?? []).map(String) });
   } catch (err) {
     next(err);
@@ -247,9 +252,9 @@ exports.deleteMe = async (req, res, next) => {
     await Listing.deleteMany({ user_id: userId });
     await Message.deleteMany({ $or: [{ from: userId }, { to: userId }] });
     const deleted = await User.findByIdAndDelete(userId);
-    if (!deleted) return res.status(404).json({ message: "Użytkownik nie znaleziony" });
-    res.clearCookie("refreshToken", { ...REFRESH_COOKIE, maxAge: 0 });
-    res.json({ message: "Konto zostało usunięte" });
+    if (!deleted) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+    res.clearCookie('refreshToken', { ...REFRESH_COOKIE, maxAge: 0 });
+    res.json({ message: 'Konto zostało usunięte' });
   } catch (err) {
     next(err);
   }

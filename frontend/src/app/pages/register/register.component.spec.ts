@@ -7,6 +7,16 @@ import { NotificationService } from '../../core/services/notification.service';
 import { RegisterComponent } from './register.component';
 
 describe('RegisterComponent', () => {
+  type RegisterForm = {
+    setValue(value: { username: string; email: string; password: string; confirmPassword: string }): void;
+    hasError(errorCode: string): boolean;
+  };
+  type RegisterComponentHarness = {
+    form: RegisterForm;
+    emailSent: () => boolean;
+    registeredEmail: () => string;
+  };
+
   let fixture: ComponentFixture<RegisterComponent>;
   let component: RegisterComponent;
   let auth: { register: jest.Mock; login: jest.Mock };
@@ -36,25 +46,27 @@ describe('RegisterComponent', () => {
   });
 
   test('keeps form invalid when passwords do not match', () => {
-    (component as any).form.setValue({
+    (component as unknown as RegisterComponentHarness).form.setValue({
       username: 'Jan',
       email: 'jan@example.com',
       password: 'secret123',
       confirmPassword: 'different',
     });
 
-    expect((component as any).form.hasError('passwordsMismatch')).toBe(true);
+    expect((component as unknown as RegisterComponentHarness).form.hasError('passwordsMismatch')).toBe(true);
   });
 
   test('shows email verification state when backend requires verification', () => {
-    auth.register.mockReturnValue(of({
-      _id: 'u1',
-      username: 'Jan',
-      email: 'jan@example.com',
-      requiresVerification: true,
-    }));
+    auth.register.mockReturnValue(
+      of({
+        _id: 'u1',
+        username: 'Jan',
+        email: 'jan@example.com',
+        requiresVerification: true,
+      }),
+    );
 
-    (component as any).form.setValue({
+    (component as unknown as RegisterComponentHarness).form.setValue({
       username: 'Jan',
       email: 'jan@example.com',
       password: 'secret123',
@@ -68,7 +80,7 @@ describe('RegisterComponent', () => {
       password: 'secret123',
     });
     expect(auth.login).not.toHaveBeenCalled();
-    expect((component as any).emailSent()).toBe(true);
-    expect((component as any).registeredEmail()).toBe('jan@example.com');
+    expect((component as unknown as RegisterComponentHarness).emailSent()).toBe(true);
+    expect((component as unknown as RegisterComponentHarness).registeredEmail()).toBe('jan@example.com');
   });
 });
