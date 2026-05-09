@@ -1,7 +1,4 @@
-const express = require("express");
 const dotenv = require("dotenv");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 
 dotenv.config();
@@ -28,34 +25,7 @@ if (process.env.NODE_ENV === "production" && !process.env.FRONTEND_URL) {
 
 connectDB();
 
-const app = express();
-
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:4200",
-  credentials: true,
-}));
-app.use(cookieParser());
-app.use(express.json({ limit: "20mb" }));
-
-const authRoutes = require("./routes/auth");
-const listingRoutes = require("./routes/listings");
-const categoryRoutes = require("./routes/categories");
-const adminRoutes = require("./routes/admin");
-const messageRoutes = require("./routes/messages");
-
-app.use("/api/auth", authRoutes);
-app.use("/api/listings", listingRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/messages", messageRoutes);
-
-app.get("/", (req, res) => {
-  res.send("API działa");
-});
-
-const errorHandler = require("./middleware/errorHandler");
-app.use(errorHandler);
-
+const app = require("./app");
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
