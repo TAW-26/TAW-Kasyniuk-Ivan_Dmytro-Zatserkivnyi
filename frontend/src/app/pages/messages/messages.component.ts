@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
@@ -15,296 +25,300 @@ import { NotificationService } from '../../core/services/notification.service';
   standalone: true,
   imports: [FormsModule, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .chat-shell {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 1.5rem;
-      padding: 1.5rem 2rem;
-      height: calc(100vh - 70px);
-    }
-
-    @media (max-width: 900px) {
+  styles: [
+    `
       .chat-shell {
-        grid-template-columns: 1fr;
-        height: auto;
-        padding: 1rem;
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem 2rem;
+        height: calc(100vh - 70px);
       }
-      .conversations-pane.has-active {
+
+      @media (max-width: 900px) {
+        .chat-shell {
+          grid-template-columns: 1fr;
+          height: auto;
+          padding: 1rem;
+        }
+        .conversations-pane.has-active {
+          display: none;
+        }
+      }
+
+      .conversations-pane {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 400px;
+      }
+
+      .pane-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+      }
+
+      .conversation-list {
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      .conversation-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+        padding: 0.85rem 1.25rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--gray-100);
+        transition: background 0.15s;
+      }
+
+      .conversation-row:hover {
+        background: var(--gray-50);
+      }
+
+      .conversation-row.active {
+        background: var(--primary-50);
+        border-left: 3px solid var(--primary);
+      }
+
+      .conversation-avatar {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        overflow: hidden;
+      }
+      .conversation-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .message-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-end;
+        max-width: 70%;
+      }
+      .message-row.mine {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+      .message-row.theirs {
+        align-self: flex-start;
+      }
+      .message-row .conversation-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+      }
+      .message-row .message-bubble {
+        max-width: 100%;
+      }
+      .message-row.mine + .message-meta {
+        align-self: flex-end;
+      }
+
+      .conversation-meta {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .conversation-name {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-weight: 600;
+        font-size: 0.92rem;
+      }
+
+      .conversation-time {
+        color: var(--gray-500);
+        font-size: 0.7rem;
+        font-weight: 400;
+        flex-shrink: 0;
+      }
+
+      .conversation-preview {
+        color: var(--gray-600);
+        font-size: 0.825rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .unread-badge {
+        background: var(--primary);
+        color: white;
+        border-radius: 999px;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+
+      .empty-list {
+        padding: 2rem 1rem;
+        text-align: center;
+        color: var(--gray-500);
+      }
+
+      .chat-pane {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 400px;
+      }
+
+      .chat-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .chat-header .partner-name {
+        font-weight: 600;
+      }
+
+      .chat-header .partner-meta {
+        color: var(--gray-500);
+        font-size: 0.8rem;
+      }
+
+      .messages-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        background: var(--surface);
+      }
+
+      .message-bubble {
+        padding: 0.5rem 0.85rem;
+        border-radius: 14px;
+        max-width: 70%;
+        font-size: 0.92rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .message-bubble.mine {
+        align-self: flex-end;
+        background: var(--primary);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message-bubble.theirs {
+        align-self: flex-start;
+        background: var(--card);
+        color: var(--text);
+        border: 1px solid var(--gray-200);
+        border-bottom-left-radius: 4px;
+      }
+
+      .message-meta {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        margin-top: 0.15rem;
+      }
+
+      .message-bubble.mine + .message-meta,
+      .message-meta.mine {
+        align-self: flex-end;
+      }
+
+      .listing-context {
+        align-self: center;
+        color: var(--gray-500);
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+        background: var(--gray-100);
+        border-radius: 999px;
+        margin: 0.25rem 0;
+      }
+
+      .composer {
+        border-top: 1px solid var(--gray-200);
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--card);
+      }
+
+      .composer textarea {
+        flex: 1;
+        resize: none;
+        height: 44px;
+        min-height: 44px;
+        max-height: 44px;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        background: var(--gray-100);
+        color: var(--text);
+        overflow-y: auto;
+      }
+
+      .composer button {
+        align-self: center;
+        flex: 0 0 64px;
+        height: 44px;
+        min-width: 64px;
+      }
+
+      .placeholder-pane {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-500);
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .back-btn {
+        background: transparent;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-size: 0.85rem;
         display: none;
       }
-    }
 
-    .conversations-pane {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 400px;
-    }
-
-    .pane-header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--gray-200);
-      font-weight: 600;
-    }
-
-    .conversation-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .conversation-row {
-      display: flex;
-      gap: 0.75rem;
-      align-items: flex-start;
-      padding: 0.85rem 1.25rem;
-      cursor: pointer;
-      border-bottom: 1px solid var(--gray-100);
-      transition: background 0.15s;
-    }
-
-    .conversation-row:hover {
-      background: var(--gray-50);
-    }
-
-    .conversation-row.active {
-      background: var(--primary-50);
-      border-left: 3px solid var(--primary);
-    }
-
-    .conversation-avatar {
-      width: 38px;
-      height: 38px;
-      flex-shrink: 0;
-      border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 600;
-      font-size: 0.9rem;
-      overflow: hidden;
-    }
-    .conversation-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .message-row {
-      display: flex;
-      gap: 0.5rem;
-      align-items: flex-end;
-      max-width: 70%;
-    }
-    .message-row.mine {
-      align-self: flex-end;
-      flex-direction: row-reverse;
-    }
-    .message-row.theirs {
-      align-self: flex-start;
-    }
-    .message-row .conversation-avatar {
-      width: 28px;
-      height: 28px;
-      font-size: 0.7rem;
-    }
-    .message-row .message-bubble {
-      max-width: 100%;
-    }
-    .message-row.mine + .message-meta {
-      align-self: flex-end;
-    }
-
-    .conversation-meta {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .conversation-name {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
-      font-weight: 600;
-      font-size: 0.92rem;
-    }
-
-    .conversation-time {
-      color: var(--gray-500);
-      font-size: 0.7rem;
-      font-weight: 400;
-      flex-shrink: 0;
-    }
-
-    .conversation-preview {
-      color: var(--gray-600);
-      font-size: 0.825rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .unread-badge {
-      background: var(--primary);
-      color: white;
-      border-radius: 999px;
-      padding: 0.125rem 0.5rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      margin-left: 0.5rem;
-    }
-
-    .empty-list {
-      padding: 2rem 1rem;
-      text-align: center;
-      color: var(--gray-500);
-    }
-
-    .chat-pane {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-height: 400px;
-    }
-
-    .chat-header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--gray-200);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .chat-header .partner-name {
-      font-weight: 600;
-    }
-
-    .chat-header .partner-meta {
-      color: var(--gray-500);
-      font-size: 0.8rem;
-    }
-
-    .messages-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      background: var(--surface);
-    }
-
-    .message-bubble {
-      padding: 0.5rem 0.85rem;
-      border-radius: 14px;
-      max-width: 70%;
-      font-size: 0.92rem;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-
-    .message-bubble.mine {
-      align-self: flex-end;
-      background: var(--primary);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message-bubble.theirs {
-      align-self: flex-start;
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--gray-200);
-      border-bottom-left-radius: 4px;
-    }
-
-    .message-meta {
-      font-size: 0.7rem;
-      color: var(--gray-500);
-      margin-top: 0.15rem;
-    }
-
-    .message-bubble.mine + .message-meta,
-    .message-meta.mine {
-      align-self: flex-end;
-    }
-
-    .listing-context {
-      align-self: center;
-      color: var(--gray-500);
-      font-size: 0.75rem;
-      padding: 0.25rem 0.6rem;
-      background: var(--gray-100);
-      border-radius: 999px;
-      margin: 0.25rem 0;
-    }
-
-    .composer {
-      border-top: 1px solid var(--gray-200);
-      padding: 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--card);
-    }
-
-    .composer textarea {
-      flex: 1;
-      resize: none;
-      height: 44px;
-      min-height: 44px;
-      max-height: 44px;
-      padding: 0.6rem 0.75rem;
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius);
-      font-family: inherit;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      background: var(--gray-100);
-      color: var(--text);
-      overflow-y: auto;
-    }
-
-    .composer button {
-      align-self: center;
-      flex: 0 0 64px;
-      height: 44px;
-      min-width: 64px;
-    }
-
-    .placeholder-pane {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--gray-500);
-      padding: 2rem;
-      text-align: center;
-    }
-
-    .back-btn {
-      background: transparent;
-      border: 1px solid var(--gray-300);
-      color: var(--gray-700);
-      padding: 0.35rem 0.75rem;
-      border-radius: var(--radius);
-      cursor: pointer;
-      font-size: 0.85rem;
-      display: none;
-    }
-
-    @media (max-width: 900px) {
-      .back-btn { display: inline-flex; }
-    }
-  `],
+      @media (max-width: 900px) {
+        .back-btn {
+          display: inline-flex;
+        }
+      }
+    `,
+  ],
   template: `
     <div class="chat-shell">
       <aside class="conversations-pane" [class.has-active]="!!activePartner()">
@@ -319,7 +333,8 @@ import { NotificationService } from '../../core/services/notification.service';
               <div
                 class="conversation-row"
                 [class.active]="activePartner()?._id === conv.partner._id"
-                (click)="openConversation(conv.partner)">
+                (click)="openConversation(conv.partner)"
+              >
                 <div class="conversation-avatar">
                   @if (conv.partner.avatar) {
                     <img [src]="conv.partner.avatar" [alt]="conv.partner.username" />
@@ -379,9 +394,7 @@ import { NotificationService } from '../../core/services/notification.service';
             } @else {
               @for (msg of messages(); track msg._id) {
                 @if (msg.listing_id && shouldShowListingContext($index)) {
-                  <div class="listing-context">
-                    Dotyczy ogłoszenia: {{ getListingTitle(msg) }}
-                  </div>
+                  <div class="listing-context">Dotyczy ogłoszenia: {{ getListingTitle(msg) }}</div>
                 }
                 <div class="message-row" [class.mine]="isMine(msg)" [class.theirs]="!isMine(msg)">
                   <div class="conversation-avatar">
@@ -405,7 +418,8 @@ import { NotificationService } from '../../core/services/notification.service';
               [(ngModel)]="draft"
               name="draft"
               placeholder="Napisz wiadomość..."
-              (keydown.enter)="onEnter($event)"></textarea>
+              (keydown.enter)="onEnter($event)"
+            ></textarea>
             <button mat-flat-button color="primary" type="submit" [disabled]="!draft.trim() || sending()">
               @if (sending()) {
                 <span class="btn-spinner"></span>
@@ -430,7 +444,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   protected readonly conversations = signal<ConversationSummary[]>([]);
   protected readonly loadingConversations = signal(true);
-  protected readonly activePartner = signal<{ _id: string; username: string; email: string; avatar?: string } | null>(null);
+  protected readonly activePartner = signal<{ _id: string; username: string; email: string; avatar?: string } | null>(
+    null,
+  );
   protected readonly activeListingId = signal<string | null>(null);
   protected readonly messages = signal<Message[]>([]);
   protected readonly loadingMessages = signal(false);
@@ -557,21 +573,19 @@ export class MessagesComponent implements OnInit, OnDestroy {
     if (!partner || !content || this.sending()) return;
 
     this.sending.set(true);
-    this.messagesService
-      .send({ to: partner._id, content, listing_id: this.activeListingId() })
-      .subscribe({
-        next: (msg) => {
-          this.messages.update((list) => [...list, msg]);
-          this.draft = '';
-          this.sending.set(false);
-          this.refreshConversations(false);
-          queueMicrotask(() => this.scrollToBottom());
-        },
-        error: () => {
-          this.sending.set(false);
-          this.notifications.show('Nie udało się wysłać wiadomości');
-        },
-      });
+    this.messagesService.send({ to: partner._id, content, listing_id: this.activeListingId() }).subscribe({
+      next: (msg) => {
+        this.messages.update((list) => [...list, msg]);
+        this.draft = '';
+        this.sending.set(false);
+        this.refreshConversations(false);
+        queueMicrotask(() => this.scrollToBottom());
+      },
+      error: () => {
+        this.sending.set(false);
+        this.notifications.show('Nie udało się wysłać wiadomości');
+      },
+    });
   }
 
   private openPartnerById(userId: string): void {

@@ -1,7 +1,7 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
-const Listing = require("../models/Listing");
-const Message = require("../models/Message");
+require('dotenv').config();
+const mongoose = require('mongoose');
+const Listing = require('../models/Listing');
+const Message = require('../models/Message');
 
 (async () => {
   try {

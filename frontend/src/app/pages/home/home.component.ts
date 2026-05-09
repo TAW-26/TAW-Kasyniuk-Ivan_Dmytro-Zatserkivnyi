@@ -15,7 +15,6 @@ import { Category } from '../../core/models/category.model';
 import { Listing, ListingFilters } from '../../core/models/listing.model';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
-import { FavoritesService } from '../../core/services/favorites.service';
 import { ListingService } from '../../core/services/listing.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AdCardComponent } from '../../shared/components/ad-card/ad-card.component';
@@ -39,219 +38,274 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
     MatDividerModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .shell {
-      min-height: 100vh;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-    }
+  styles: [
+    `
+      .shell {
+        min-height: 100vh;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+      }
 
-    /* ── toolbar ── */
-    :host ::ng-deep .app-toolbar {
-      background: var(--card) !important;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      gap: 0.5rem;
-      padding: 0 1.5rem;
-    }
-    .brand {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: var(--primary);
-      letter-spacing: -0.5px;
-      text-decoration: none;
-    }
-    .flex-spacer { flex: 1 1 auto; }
+      :host ::ng-deep .app-toolbar {
+        background: var(--card) !important;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        gap: 0.5rem;
+        padding: 0 1.5rem;
+      }
+      .brand {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--primary);
+        letter-spacing: -0.5px;
+        text-decoration: none;
+      }
+      .flex-spacer {
+        flex: 1 1 auto;
+      }
 
-    /* ── hero ── */
-    .hero {
-      background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 60%, var(--primary-light) 100%);
-      color: #fff;
-      padding: 5rem 2rem 6rem;
-      text-align: center;
-    }
-    .hero-inner { max-width: 680px; margin: 0 auto; }
-    .hero h1 {
-      font-size: clamp(1.75rem, 4vw, 2.75rem);
-      font-weight: 800;
-      line-height: 1.2;
-      margin: 0 0 1rem;
-      letter-spacing: -0.5px;
-    }
-    .hero p {
-      font-size: 1.05rem;
-      opacity: 0.9;
-      margin: 0 0 2.25rem;
-      line-height: 1.65;
-    }
-    .hero-cta { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-    /* white filled button inside hero */
-    .hero-cta .btn-white {
-      background-color: #fff !important;
-      color: var(--primary) !important;
-    }
-    /* outlined white button inside hero */
-    .hero-cta .btn-outline-white {
-      color: #fff !important;
-      border-color: rgba(255,255,255,0.65) !important;
-    }
-    .hero-cta .btn-outline-white:hover {
-      background: rgba(255,255,255,0.12) !important;
-    }
+      .hero {
+        background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 60%, var(--primary-light) 100%);
+        color: #fff;
+        padding: 5rem 2rem 6rem;
+        text-align: center;
+      }
+      .hero-inner {
+        max-width: 680px;
+        margin: 0 auto;
+      }
+      .hero h1 {
+        font-size: clamp(1.75rem, 4vw, 2.75rem);
+        font-weight: 800;
+        line-height: 1.2;
+        margin: 0 0 1rem;
+        letter-spacing: -0.5px;
+      }
+      .hero p {
+        font-size: 1.05rem;
+        opacity: 0.9;
+        margin: 0 0 2.25rem;
+        line-height: 1.65;
+      }
+      .hero-cta {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .hero-cta .btn-white {
+        background-color: #fff !important;
+        color: var(--primary) !important;
+      }
+      .hero-cta .btn-outline-white {
+        color: #fff !important;
+        border-color: rgba(255, 255, 255, 0.65) !important;
+      }
+      .hero-cta .btn-outline-white:hover {
+        background: rgba(255, 255, 255, 0.12) !important;
+      }
 
-    /* ── filter bar ── */
-    .filter-section {
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 0.75rem 2rem;
-    }
-    .filter-bar mat-form-field { flex: 1; min-width: 130px; }
-    .filter-bar mat-form-field.grow { flex: 2; min-width: 200px; }
-    .filter-bar button[mat-stroked-button] {
-      height: 56px;
-      border-color: var(--border);
-      color: var(--text);
-      font-size: 0.875rem;
-    }
-    .filter-bar button[mat-stroked-button]:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: var(--primary-50);
-    }
+      .filter-section {
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        padding: 0.75rem 2rem;
+      }
+      .filter-bar mat-form-field {
+        flex: 1;
+        min-width: 130px;
+      }
+      .filter-bar mat-form-field.grow {
+        flex: 2;
+        min-width: 200px;
+      }
+      .filter-bar button[mat-stroked-button] {
+        height: 56px;
+        border-color: var(--border);
+        color: var(--text);
+        font-size: 0.875rem;
+      }
+      .filter-bar button[mat-stroked-button]:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-50);
+      }
 
-    /* ── trust chips ── */
-    .trust-row {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0.75rem 2rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    :host ::ng-deep .trust-row .mat-mdc-chip {
-      background: var(--card) !important;
-      color: var(--gray-500) !important;
-      border: 1px solid var(--border) !important;
-      pointer-events: none;
-    }
-    :host ::ng-deep .trust-row .mat-mdc-chip .mat-icon {
-      color: var(--primary);
-      font-size: 1rem;
-      width: 1rem;
-      height: 1rem;
-    }
+      .trust-row {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.75rem 2rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      :host ::ng-deep .trust-row .mat-mdc-chip {
+        background: var(--card) !important;
+        color: var(--gray-500) !important;
+        border: 1px solid var(--border) !important;
+        pointer-events: none;
+      }
+      :host ::ng-deep .trust-row .mat-mdc-chip .mat-icon {
+        color: var(--primary);
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+      }
 
-    /* ── categories ── */
-    .section { max-width: 1200px; margin: 0 auto; padding: 2.5rem 2rem 0; }
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--gray-400);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 0.875rem;
-    }
-    :host ::ng-deep .cat-chip-list .mat-mdc-chip-option {
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    :host ::ng-deep .cat-chip-list .mat-mdc-chip-option.mat-mdc-chip-selected,
-    :host ::ng-deep .cat-chip-list .mat-mdc-chip-option:focus {
-      background: var(--primary-50) !important;
-      color: var(--primary) !important;
-    }
-    :host ::ng-deep .cat-chip-list .mdc-evolution-chip__checkmark {
-      display: none;
-    }
+      .section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2.5rem 2rem 0;
+      }
+      .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--gray-400);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: 0.875rem;
+      }
+      :host ::ng-deep .cat-chip-list .mat-mdc-chip-option {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      :host ::ng-deep .cat-chip-list .mat-mdc-chip-option.mat-mdc-chip-selected,
+      :host ::ng-deep .cat-chip-list .mat-mdc-chip-option:focus {
+        background: var(--primary-50) !important;
+        color: var(--primary) !important;
+      }
+      :host ::ng-deep .cat-chip-list .mdc-evolution-chip__checkmark {
+        display: none;
+      }
 
-    /* ── listings ── */
-    .listings-section { max-width: 1200px; margin: 0 auto; padding: 2rem 2rem 4rem; }
-    :host ::ng-deep .listings-section .ads-grid {
-      display: flex !important;
-      flex-wrap: nowrap !important;
-      overflow-x: auto;
-      gap: 1rem;
-      padding-bottom: 0.75rem;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-    :host ::ng-deep .listings-section .ads-grid > * {
-      min-width: 260px;
-      max-width: 260px;
-      flex-shrink: 0;
-    }
-    .listings-header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 1.25rem;
-    }
-    .listings-title { font-size: 1.1rem; font-weight: 700; }
-    .listings-count { font-size: 0.8rem; color: var(--gray-400); }
-    .empty { text-align: center; padding: 3rem 1rem; color: var(--gray-400); }
+      .listings-section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 2rem 4rem;
+      }
+      :host ::ng-deep .listings-section .ads-grid {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        gap: 1rem;
+        padding-bottom: 0.75rem;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      :host ::ng-deep .listings-section .ads-grid > * {
+        min-width: 260px;
+        max-width: 260px;
+        flex-shrink: 0;
+      }
+      .listings-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+      }
+      .listings-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+      .listings-count {
+        font-size: 0.8rem;
+        color: var(--gray-400);
+      }
+      .empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--gray-400);
+      }
 
-    /* ── CTA card ── */
-    .cta-wrap {
-      max-width: 1200px;
-      width: calc(100% - 4rem);
-      margin: 0 auto 4rem;
-    }
-    :host ::ng-deep .cta-card {
-      background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 100%) !important;
-      color: #fff;
-      text-align: center;
-    }
-    :host ::ng-deep .cta-card .mat-mdc-card-content {
-      padding: 2.5rem 2rem !important;
-    }
-    .cta-card h2 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem; color: #fff; }
-    .cta-card p { opacity: 0.88; margin: 0 0 1.75rem; font-size: 0.95rem; color: #fff; }
-    .btn-cta-white {
-      background-color: #fff !important;
-      color: var(--primary) !important;
-      font-weight: 700 !important;
-      padding: 0 1.75rem !important;
-      height: 44px !important;
-    }
+      .cta-wrap {
+        max-width: 1200px;
+        width: calc(100% - 4rem);
+        margin: 0 auto 4rem;
+      }
+      :host ::ng-deep .cta-card {
+        background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 100%) !important;
+        color: #fff;
+        text-align: center;
+      }
+      :host ::ng-deep .cta-card .mat-mdc-card-content {
+        padding: 2.5rem 2rem !important;
+      }
+      .cta-card h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin: 0 0 0.5rem;
+        color: #fff;
+      }
+      .cta-card p {
+        opacity: 0.88;
+        margin: 0 0 1.75rem;
+        font-size: 0.95rem;
+        color: #fff;
+      }
+      .btn-cta-white {
+        background-color: #fff !important;
+        color: var(--primary) !important;
+        font-weight: 700 !important;
+        padding: 0 1.75rem !important;
+        height: 44px !important;
+      }
 
-    @media (max-width: 860px) {
-      .filter-section { padding: 0.75rem 1rem; }
-    }
-    @media (max-width: 600px) {
-      :host ::ng-deep .app-toolbar { padding: 0 1rem; }
-      .hero { padding: 3rem 1rem 4.5rem; }
-      .filter-section { padding: 0.5rem 1rem; }
-      .section { padding: 2rem 1rem 0; }
-      .listings-section { padding: 1.5rem 1rem 3rem; }
-      .cta-wrap { width: calc(100% - 2rem); margin: 0 auto 3rem; }
-      :host ::ng-deep .cta-card .mat-mdc-card-content { padding: 2rem 1.25rem !important; }
-    }
-  `],
+      @media (max-width: 860px) {
+        .filter-section {
+          padding: 0.75rem 1rem;
+        }
+      }
+      @media (max-width: 600px) {
+        :host ::ng-deep .app-toolbar {
+          padding: 0 1rem;
+        }
+        .hero {
+          padding: 3rem 1rem 4.5rem;
+        }
+        .filter-section {
+          padding: 0.5rem 1rem;
+        }
+        .section {
+          padding: 2rem 1rem 0;
+        }
+        .listings-section {
+          padding: 1.5rem 1rem 3rem;
+        }
+        .cta-wrap {
+          width: calc(100% - 2rem);
+          margin: 0 auto 3rem;
+        }
+        :host ::ng-deep .cta-card .mat-mdc-card-content {
+          padding: 2rem 1.25rem !important;
+        }
+      }
+    `,
+  ],
   template: `
     <div class="shell">
-
-      <!-- toolbar -->
       <mat-toolbar class="app-toolbar">
         <a class="brand" routerLink="/">Bazarek</a>
         <span class="flex-spacer"></span>
-        <button mat-icon-button
+        <button
+          mat-icon-button
           [matTooltip]="darkMode() ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'"
-          (click)="toggleTheme()">
+          (click)="toggleTheme()"
+        >
           <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
         </button>
         <a mat-stroked-button routerLink="/login">Zaloguj się</a>
         <a mat-flat-button color="primary" routerLink="/register">Zarejestruj się</a>
       </mat-toolbar>
-
-      <!-- hero -->
       <section class="hero">
         <div class="hero-inner">
-          <h1>Kupuj i sprzedawaj lokalnie<br>bez prowizji i pośredników</h1>
-          <p>Tysiące ogłoszeń w Twojej okolicy. Kontaktuj się bezpośrednio ze sprzedawcą — szybko, bezpiecznie i za darmo.</p>
+          <h1>Kupuj i sprzedawaj lokalnie<br />bez prowizji i pośredników</h1>
+          <p>
+            Tysiące ogłoszeń w Twojej okolicy. Kontaktuj się bezpośrednio ze sprzedawcą — szybko, bezpiecznie i za
+            darmo.
+          </p>
           <div class="hero-cta">
             <a mat-flat-button class="btn-white" routerLink="/register">
               <mat-icon>add_circle</mat-icon>
@@ -264,8 +318,6 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
           </div>
         </div>
       </section>
-
-      <!-- filter bar -->
       <div class="filter-section">
         <form class="filter-bar" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
           <mat-form-field appearance="outline">
@@ -309,16 +361,10 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
             </mat-select>
           </mat-form-field>
 
-          <button mat-stroked-button type="submit">
-            <mat-icon>search</mat-icon> Szukaj
-          </button>
-          <button mat-stroked-button type="button" (click)="resetFilters()">
-            <mat-icon>clear</mat-icon> Wyczyść
-          </button>
+          <button mat-stroked-button type="submit"><mat-icon>search</mat-icon> Szukaj</button>
+          <button mat-stroked-button type="button" (click)="resetFilters()"><mat-icon>clear</mat-icon> Wyczyść</button>
         </form>
       </div>
-
-      <!-- trust strip -->
       <mat-divider />
       <div class="trust-row">
         <mat-chip-set>
@@ -329,12 +375,14 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
         </mat-chip-set>
       </div>
       <mat-divider />
-
-      <!-- category chips -->
       @if (categories().length > 0) {
         <div class="section">
           <div class="section-label">Przeglądaj kategorie</div>
-          <mat-chip-listbox class="cat-chip-list" [value]="activeCategory()" (change)="selectCategory($event.value ?? '')">
+          <mat-chip-listbox
+            class="cat-chip-list"
+            [value]="activeCategory()"
+            (change)="selectCategory($event.value ?? '')"
+          >
             <mat-chip-option value="">Wszystkie</mat-chip-option>
             @for (cat of categories(); track cat._id) {
               <mat-chip-option [value]="cat._id">{{ cat.name }}</mat-chip-option>
@@ -342,8 +390,6 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
           </mat-chip-listbox>
         </div>
       }
-
-      <!-- listings -->
       <div class="listings-section">
         <div class="listings-header">
           <div class="listings-title">
@@ -356,7 +402,7 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
 
         @if (loading()) {
           <div class="ads-grid">
-            @for (s of [1,2,3,4,5,6]; track s) {
+            @for (s of [1, 2, 3, 4, 5, 6]; track s) {
               <div class="skeleton-card">
                 <div class="skeleton skeleton-image"></div>
                 <div class="skeleton-body">
@@ -379,8 +425,6 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
           </div>
         }
       </div>
-
-      <!-- CTA -->
       <div class="cta-wrap">
         <mat-card class="cta-card">
           <mat-card-content>
@@ -393,7 +437,6 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
           </mat-card-content>
         </mat-card>
       </div>
-
     </div>
   `,
 })
@@ -401,7 +444,6 @@ export class HomeComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly listingService = inject(ListingService);
   private readonly categoryService = inject(CategoryService);
-  private readonly favorites = inject(FavoritesService);
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
@@ -452,7 +494,7 @@ export class HomeComponent implements OnInit {
   }
 
   categoryName(id: string): string {
-    return this.categories().find(c => c._id === id)?.name ?? '';
+    return this.categories().find((category) => category._id === id)?.name ?? '';
   }
 
   toggleTheme(): void {
@@ -483,7 +525,6 @@ export class HomeComponent implements OnInit {
     this.listingService.getAll(filters).subscribe({
       next: (list) => {
         this.ads.set(list);
-        this.favorites.syncWithExisting(list.map((ad) => ad._id));
         this.loading.set(false);
       },
       error: () => {

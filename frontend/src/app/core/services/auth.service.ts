@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, RegisterResponse, User } from '../models/user.model';
 
@@ -27,29 +27,19 @@ export class AuthService {
         localStorage.setItem(ACCESS_TOKEN_KEY, res.accessToken);
         localStorage.setItem(USER_KEY, JSON.stringify(res.user));
         this._user.set(res.user);
-      })
+      }),
     );
   }
 
   refresh(): Observable<string> {
-    return new Observable<string>((observer) => {
-      this.http
-        .post<{ accessToken: string }>(`${this.baseUrl}/refresh`, {}, { withCredentials: true })
-        .subscribe({
-          next: (res) => {
-            localStorage.setItem(ACCESS_TOKEN_KEY, res.accessToken);
-            observer.next(res.accessToken);
-            observer.complete();
-          },
-          error: (err) => observer.error(err),
-        });
-    });
+    return this.http.post<{ accessToken: string }>(`${this.baseUrl}/refresh`, {}, { withCredentials: true }).pipe(
+      tap((res) => localStorage.setItem(ACCESS_TOKEN_KEY, res.accessToken)),
+      map((res) => res.accessToken),
+    );
   }
 
   logout(): void {
-    this.http
-      .post(`${this.baseUrl}/logout`, {}, { withCredentials: true })
-      .subscribe({ error: () => {} });
+    this.http.post(`${this.baseUrl}/logout`, {}, { withCredentials: true }).subscribe({ error: () => {} });
     this.logoutLocal();
   }
 
@@ -64,15 +54,11 @@ export class AuthService {
   }
 
   fetchMe(): Observable<User> {
-    return this.http.get<User>(`${this.baseUrl}/me`).pipe(
-      tap((user) => this.persistUser(user)),
-    );
+    return this.http.get<User>(`${this.baseUrl}/me`).pipe(tap((user) => this.persistUser(user)));
   }
 
   updateProfile(payload: { username?: string; phone?: string; avatar?: string }): Observable<User> {
-    return this.http.put<User>(`${this.baseUrl}/me`, payload).pipe(
-      tap((user) => this.persistUser(user)),
-    );
+    return this.http.put<User>(`${this.baseUrl}/me`, payload).pipe(tap((user) => this.persistUser(user)));
   }
 
   changePassword(payload: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
@@ -80,9 +66,7 @@ export class AuthService {
   }
 
   deleteAccount(): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.baseUrl}/me`).pipe(
-      tap(() => this.logoutLocal()),
-    );
+    return this.http.delete<{ message: string }>(`${this.baseUrl}/me`).pipe(tap(() => this.logoutLocal()));
   }
 
   patchFavorites(favorites: string[]): void {

@@ -21,68 +21,70 @@ import { NotificationService } from '../../core/services/notification.service';
     MatProgressSpinnerModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .auth-wrapper {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      padding: 2rem 1rem;
-    }
+  styles: [
+    `
+      .auth-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        padding: 2rem 1rem;
+      }
 
-    .auth-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: none;
-      width: 100%;
-      max-width: 420px;
-      padding: 2.5rem;
-    }
+      .auth-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: none;
+        width: 100%;
+        max-width: 420px;
+        padding: 2.5rem;
+      }
 
-    .logo {
-      display: block;
-      font-size: 1.75rem;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 0.5rem;
-      color: var(--primary);
-    }
+      .logo {
+        display: block;
+        font-size: 1.75rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+      }
 
-    .subtitle {
-      text-align: center;
-      color: var(--gray-600);
-      margin-bottom: 2rem;
-      font-size: 0.95rem;
-    }
+      .subtitle {
+        text-align: center;
+        color: var(--gray-600);
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+      }
 
-    .form-error {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 0.625rem 0.75rem;
-      border-radius: var(--radius);
-      margin-bottom: 1rem;
-      font-size: 0.875rem;
-    }
+      .form-error {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 0.625rem 0.75rem;
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+      }
 
-    .auth-footer {
-      margin-top: 1.5rem;
-      text-align: center;
-      color: var(--gray-600);
-      font-size: 0.875rem;
-    }
+      .auth-footer {
+        margin-top: 1.5rem;
+        text-align: center;
+        color: var(--gray-600);
+        font-size: 0.875rem;
+      }
 
-    .auth-footer a {
-      color: var(--primary);
-      font-weight: 600;
-    }
+      .auth-footer a {
+        color: var(--primary);
+        font-weight: 600;
+      }
 
-    .auth-footer a:hover {
-      text-decoration: underline;
-    }
-  `],
+      .auth-footer a:hover {
+        text-decoration: underline;
+      }
+    `,
+  ],
   template: `
     <div class="auth-wrapper">
       <div class="auth-card">
@@ -107,7 +109,13 @@ import { NotificationService } from '../../core/services/notification.service';
 
           <mat-form-field appearance="outline">
             <mat-label>Hasło</mat-label>
-            <input matInput type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+            <input
+              matInput
+              type="password"
+              formControlName="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
             @if (showError('password', 'required')) {
               <mat-error>Hasło jest wymagane</mat-error>
             }
@@ -122,9 +130,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </button>
         </form>
 
-        <div class="auth-footer">
-          Nie masz konta? <a routerLink="/register">Zarejestruj się</a>
-        </div>
+        <div class="auth-footer">Nie masz konta? <a routerLink="/register">Zarejestruj się</a></div>
       </div>
     </div>
   `,
@@ -166,7 +172,9 @@ export class LoginComponent {
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
         if (err.error?.code === 'EMAIL_NOT_VERIFIED') {
-          this.errorMessage.set('Konto nie zostało jeszcze potwierdzone. Sprawdź skrzynkę pocztową i kliknij link weryfikacyjny.');
+          this.errorMessage.set(
+            'Konto nie zostało jeszcze potwierdzone. Sprawdź skrzynkę pocztową i kliknij link weryfikacyjny.',
+          );
         } else {
           this.errorMessage.set(err.error?.message ?? 'Błąd logowania');
         }

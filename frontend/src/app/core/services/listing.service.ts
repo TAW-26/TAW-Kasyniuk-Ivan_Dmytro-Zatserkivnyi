@@ -1,9 +1,9 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Listing, ListingFilters, ListingPayload, ListingsResponse } from '../models/listing.model';
-import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class ListingService {
@@ -26,9 +26,9 @@ export class ListingService {
   }
 
   getAll(filters: ListingFilters = {}): Observable<Listing[]> {
-    return this.http.get<ListingsResponse>(this.baseUrl, { params: this.buildParams(filters) }).pipe(
-      map(res => res.listings)
-    );
+    return this.http
+      .get<ListingsResponse>(this.baseUrl, { params: this.buildParams(filters) })
+      .pipe(map((res) => res.listings));
   }
 
   getPaged(filters: ListingFilters = {}): Observable<ListingsResponse> {

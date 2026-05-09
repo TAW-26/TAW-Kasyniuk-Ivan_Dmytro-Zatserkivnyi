@@ -17,9 +17,7 @@ export class MessagesService {
   }
 
   getConversation(userId: string): Observable<Message[]> {
-    return this.http.get<Message[]>(`${this.baseUrl}/with/${userId}`).pipe(
-      tap(() => this.refreshUnreadCount()),
-    );
+    return this.http.get<Message[]>(`${this.baseUrl}/with/${userId}`).pipe(tap(() => this.refreshUnreadCount()));
   }
 
   send(payload: { to: string; content: string; listing_id?: string | null }): Observable<Message> {
@@ -29,8 +27,7 @@ export class MessagesService {
   refreshUnreadCount(): void {
     this.http.get<{ count: number }>(`${this.baseUrl}/unread-count`).subscribe({
       next: (res) => this._unreadCount.set(res.count),
-      error: (err) => {
-        if (err.status !== 401) console.error('[MessagesService] unread-count:', err.message);
+      error: () => {
         this._unreadCount.set(0);
       },
     });

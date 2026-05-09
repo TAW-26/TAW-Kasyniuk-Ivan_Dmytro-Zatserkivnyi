@@ -30,44 +30,42 @@ import { NotificationService } from '../../core/services/notification.service';
     MatIconModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .content-section { padding: 2rem; }
-    @media (max-width: 768px) {
-      .content-section { padding: 1rem; }
-    }
-    .section-header { display: flex; align-items: center; margin-bottom: 1.5rem; }
-    .section-title { font-size: 1.25rem; font-weight: 600; }
-    .section-title:not(.visible-title) { display: none; }
-    .form-card {
-      max-width: 600px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 2rem;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-    }
-    .hidden-input {
-      display: none;
-    }
-    .edit-submit {
-      position: relative;
-      color: transparent !important;
-    }
-    .edit-submit::after {
-      content: 'Zapisz zmiany';
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--bg);
-    }
-  `],
+  styles: [
+    `
+      .content-section {
+        padding: 2rem;
+      }
+      @media (max-width: 768px) {
+        .content-section {
+          padding: 1rem;
+        }
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      .form-card {
+        max-width: 600px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+      }
+      .hidden-input {
+        display: none;
+      }
+    `,
+  ],
   template: `
     <div class="content-section">
       <div class="section-header">
-        <div class="section-title visible-title">{{ isEditMode() ? 'Edytuj ogłoszenie' : 'Dodaj nowe ogłoszenie' }}</div>
-        <div class="section-title">Dodaj nowe ogłoszenie</div>
+        <div class="section-title">{{ isEditMode() ? 'Edytuj ogłoszenie' : 'Dodaj nowe ogłoszenie' }}</div>
       </div>
 
       <form class="form-grid form-card" [formGroup]="form" (ngSubmit)="submit()">
@@ -116,7 +114,12 @@ import { NotificationService } from '../../core/services/notification.service';
 
         <mat-form-field appearance="outline">
           <mat-label>Opis</mat-label>
-          <textarea matInput rows="5" formControlName="description" placeholder="Szczegółowy opis ogłoszenia..."></textarea>
+          <textarea
+            matInput
+            rows="5"
+            formControlName="description"
+            placeholder="Szczegółowy opis ogłoszenia..."
+          ></textarea>
           @if (showError('description', 'required')) {
             <mat-error>Opis jest wymagany</mat-error>
           }
@@ -145,7 +148,8 @@ import { NotificationService } from '../../core/services/notification.service';
             multiple
             accept="image/*"
             class="hidden-input"
-            (change)="onFilesSelected($event)" />
+            (change)="onFilesSelected($event)"
+          />
           <div class="image-preview-container">
             @for (img of images(); track $index) {
               <div class="image-preview">
@@ -156,11 +160,11 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         </div>
 
-        <button mat-flat-button color="primary" type="submit" [class.edit-submit]="isEditMode() && !loading()" [disabled]="loading()">
+        <button mat-flat-button color="primary" type="submit" [disabled]="loading()">
           @if (loading()) {
             <mat-spinner diameter="20"></mat-spinner>
           } @else {
-            Opublikuj ogłoszenie
+            {{ isEditMode() ? 'Zapisz zmiany' : 'Opublikuj ogłoszenie' }}
           }
         </button>
       </form>
@@ -202,10 +206,7 @@ export class AddAdComponent implements OnInit {
     }
   }
 
-  showError(
-    field: 'title' | 'category_id' | 'price' | 'location' | 'description' | 'status',
-    error: string
-  ): boolean {
+  showError(field: 'title' | 'category_id' | 'price' | 'location' | 'description' | 'status', error: string): boolean {
     const ctrl = this.form.controls[field];
     return ctrl.touched && ctrl.hasError(error);
   }
@@ -276,21 +277,20 @@ export class AddAdComponent implements OnInit {
       images: this.images(),
       ...(this.id() ? { status: value.status } : {}),
     };
-    const request = this.id()
-      ? this.listingService.update(this.id()!, payload)
-      : this.listingService.create(payload);
+    const request = this.id() ? this.listingService.update(this.id()!, payload) : this.listingService.create(payload);
 
-    request
-      .subscribe({
-        next: (created) => {
-          this.loading.set(false);
-          this.notifications.show('Ogłoszenie zostało opublikowane');
-          this.router.navigate(['/ads', created._id]);
-        },
-        error: (err: HttpErrorResponse) => {
-          this.loading.set(false);
-          this.notifications.show(err.error?.message ?? 'Błąd publikowania');
-        },
-      });
+    request.subscribe({
+      next: (created) => {
+        this.loading.set(false);
+        this.notifications.show(
+          this.isEditMode() ? 'Ogłoszenie zostało zaktualizowane' : 'Ogłoszenie zostało opublikowane',
+        );
+        this.router.navigate(['/ads', created._id]);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.notifications.show(err.error?.message ?? 'Błąd publikowania');
+      },
+    });
   }
 }

@@ -28,68 +28,70 @@ const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
     MatProgressSpinnerModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .auth-wrapper {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      padding: 2rem 1rem;
-    }
+  styles: [
+    `
+      .auth-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        padding: 2rem 1rem;
+      }
 
-    .auth-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: none;
-      width: 100%;
-      max-width: 460px;
-      padding: 2.5rem;
-    }
+      .auth-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: none;
+        width: 100%;
+        max-width: 460px;
+        padding: 2.5rem;
+      }
 
-    .logo {
-      display: block;
-      font-size: 1.75rem;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 0.5rem;
-      color: var(--primary);
-    }
+      .logo {
+        display: block;
+        font-size: 1.75rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+      }
 
-    .subtitle {
-      text-align: center;
-      color: var(--gray-600);
-      margin-bottom: 2rem;
-      font-size: 0.95rem;
-    }
+      .subtitle {
+        text-align: center;
+        color: var(--gray-600);
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+      }
 
-    .form-error {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 0.625rem 0.75rem;
-      border-radius: var(--radius);
-      margin-bottom: 1rem;
-      font-size: 0.875rem;
-    }
+      .form-error {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 0.625rem 0.75rem;
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+      }
 
-    .auth-footer {
-      margin-top: 1.5rem;
-      text-align: center;
-      color: var(--gray-600);
-      font-size: 0.875rem;
-    }
+      .auth-footer {
+        margin-top: 1.5rem;
+        text-align: center;
+        color: var(--gray-600);
+        font-size: 0.875rem;
+      }
 
-    .auth-footer a {
-      color: var(--primary);
-      font-weight: 600;
-    }
+      .auth-footer a {
+        color: var(--primary);
+        font-weight: 600;
+      }
 
-    .auth-footer a:hover {
-      text-decoration: underline;
-    }
-  `],
+      .auth-footer a:hover {
+        text-decoration: underline;
+      }
+    `,
+  ],
   template: `
     <div class="auth-wrapper">
       <div class="auth-card">
@@ -97,75 +99,87 @@ const matchPasswords = (group: AbstractControl): ValidationErrors | null => {
         <p class="subtitle">Załóż konto za darmo</p>
 
         @if (emailSent()) {
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem;text-align:center;">
+          <div
+            style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem;text-align:center;"
+          >
             <strong>Sprawdź swoją skrzynkę pocztową</strong>
             <p style="margin:0.5rem 0 0;color:var(--gray-600);font-size:0.875rem;">
-              Wysłaliśmy link weryfikacyjny na <strong>{{ registeredEmail() }}</strong>.
-              Potwierdź konto, a następnie zaloguj się.
+              Wysłaliśmy link weryfikacyjny na <strong>{{ registeredEmail() }}</strong
+              >. Potwierdź konto, a następnie zaloguj się.
             </p>
-            <a routerLink="/login" style="display:inline-block;margin-top:1rem;color:var(--primary);font-weight:600;">Przejdź do logowania</a>
+            <a routerLink="/login" style="display:inline-block;margin-top:1rem;color:var(--primary);font-weight:600;"
+              >Przejdź do logowania</a
+            >
           </div>
         } @else {
+          @if (errorMessage()) {
+            <div class="form-error">{{ errorMessage() }}</div>
+          }
 
-        @if (errorMessage()) {
-          <div class="form-error">{{ errorMessage() }}</div>
-        }
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
+            <mat-form-field appearance="outline">
+              <mat-label>Imię i nazwisko</mat-label>
+              <input matInput type="text" formControlName="username" placeholder="Jan Kowalski" autocomplete="off" />
+              @if (showError('username', 'required')) {
+                <mat-error>Imię i nazwisko jest wymagane</mat-error>
+              }
+              @if (showError('username', 'minlength')) {
+                <mat-error>Min. 2 znaki</mat-error>
+              }
+            </mat-form-field>
 
-        <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
-          <mat-form-field appearance="outline">
-            <mat-label>Imię i nazwisko</mat-label>
-            <input matInput type="text" formControlName="username" placeholder="Jan Kowalski" autocomplete="off" />
-            @if (showError('username', 'required')) {
-              <mat-error>Imię i nazwisko jest wymagane</mat-error>
-            }
-            @if (showError('username', 'minlength')) {
-              <mat-error>Min. 2 znaki</mat-error>
-            }
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput type="email" formControlName="email" placeholder="jan@example.com" autocomplete="off" />
+              @if (showError('email', 'required')) {
+                <mat-error>Email jest wymagany</mat-error>
+              }
+              @if (showError('email', 'email')) {
+                <mat-error>Nieprawidłowy format email</mat-error>
+              }
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" placeholder="jan@example.com" autocomplete="off" />
-            @if (showError('email', 'required')) {
-              <mat-error>Email jest wymagany</mat-error>
-            }
-            @if (showError('email', 'email')) {
-              <mat-error>Nieprawidłowy format email</mat-error>
-            }
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Hasło</mat-label>
+              <input
+                matInput
+                type="password"
+                formControlName="password"
+                placeholder="••••••••"
+                autocomplete="new-password"
+              />
+              @if (showError('password', 'required')) {
+                <mat-error>Hasło jest wymagane</mat-error>
+              }
+              @if (showError('password', 'minlength')) {
+                <mat-error>Min. 6 znaków</mat-error>
+              }
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Hasło</mat-label>
-            <input matInput type="password" formControlName="password" placeholder="••••••••" autocomplete="new-password" />
-            @if (showError('password', 'required')) {
-              <mat-error>Hasło jest wymagane</mat-error>
-            }
-            @if (showError('password', 'minlength')) {
-              <mat-error>Min. 6 znaków</mat-error>
-            }
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Powtórz hasło</mat-label>
+              <input
+                matInput
+                type="password"
+                formControlName="confirmPassword"
+                placeholder="••••••••"
+                autocomplete="new-password"
+              />
+              @if (form.hasError('passwordsMismatch') && form.controls.confirmPassword.touched) {
+                <mat-error>Hasła nie są takie same</mat-error>
+              }
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Powtórz hasło</mat-label>
-            <input matInput type="password" formControlName="confirmPassword" placeholder="••••••••" autocomplete="new-password" />
-            @if (form.hasError('passwordsMismatch') && form.controls.confirmPassword.touched) {
-              <mat-error>Hasła nie są takie same</mat-error>
-            }
-          </mat-form-field>
+            <button mat-flat-button color="primary" type="submit" [disabled]="loading()">
+              @if (loading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+              } @else {
+                Załóż konto
+              }
+            </button>
+          </form>
 
-          <button mat-flat-button color="primary" type="submit" [disabled]="loading()">
-            @if (loading()) {
-              <mat-spinner diameter="20"></mat-spinner>
-            } @else {
-              Załóż konto
-            }
-          </button>
-        </form>
-
-        <div class="auth-footer">
-          Masz już konto? <a routerLink="/login">Zaloguj się</a>
-        </div>
-
+          <div class="auth-footer">Masz już konto? <a routerLink="/login">Zaloguj się</a></div>
         }
       </div>
     </div>
@@ -189,7 +203,7 @@ export class RegisterComponent {
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
     },
-    { validators: matchPasswords }
+    { validators: matchPasswords },
   );
 
   showError(field: 'username' | 'email' | 'password', error: string): boolean {

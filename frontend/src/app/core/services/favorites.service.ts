@@ -14,14 +14,17 @@ export class FavoritesService {
   readonly count = computed(() => this._favorites().length);
 
   constructor() {
-    effect(() => {
-      const user = this.auth.user();
-      if (user) {
-        this._favorites.set(user.favorites ?? []);
-      } else {
-        this._favorites.set(this.loadLocal());
-      }
-    }, { allowSignalWrites: true });
+    effect(
+      () => {
+        const user = this.auth.user();
+        if (user) {
+          this._favorites.set(user.favorites ?? []);
+        } else {
+          this._favorites.set(this.loadLocal());
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   isFavorite(id: string): boolean {

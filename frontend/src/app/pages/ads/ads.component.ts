@@ -9,7 +9,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Category } from '../../core/models/category.model';
 import { Listing, ListingFilters } from '../../core/models/listing.model';
 import { CategoryService } from '../../core/services/category.service';
-import { FavoritesService } from '../../core/services/favorites.service';
 import { ListingService } from '../../core/services/listing.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AdCardComponent } from '../../shared/components/ad-card/ad-card.component';
@@ -32,43 +31,51 @@ import { DecimalPipe } from '@angular/common';
     DecimalPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    .content-section {
-      padding: 2rem;
-    }
-
-    @media (max-width: 768px) {
+  styles: [
+    `
       .content-section {
-        padding: 1rem;
+        padding: 2rem;
       }
-      .ads-grid {
-        grid-template-columns: 1fr;
-      }
-    }
 
-    .filter-bar mat-form-field { flex: 1; min-width: 130px; }
-    .filter-bar mat-form-field.grow { flex: 2; min-width: 200px; }
-    .filter-bar button[mat-stroked-button] {
-      height: 56px;
-      border-color: var(--border);
-      color: var(--text);
-      font-size: 0.875rem;
-    }
-    .filter-bar button[mat-stroked-button]:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: var(--primary-50);
-    }
-    .pagination {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      margin-top: 2rem;
-      color: var(--gray-600);
-      font-size: 0.875rem;
-    }
-  `],
+      @media (max-width: 768px) {
+        .content-section {
+          padding: 1rem;
+        }
+        .ads-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .filter-bar mat-form-field {
+        flex: 1;
+        min-width: 130px;
+      }
+      .filter-bar mat-form-field.grow {
+        flex: 2;
+        min-width: 200px;
+      }
+      .filter-bar button[mat-stroked-button] {
+        height: 56px;
+        border-color: var(--border);
+        color: var(--text);
+        font-size: 0.875rem;
+      }
+      .filter-bar button[mat-stroked-button]:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-50);
+      }
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        color: var(--gray-600);
+        font-size: 0.875rem;
+      }
+    `,
+  ],
   template: `
     <div class="content-section" style="padding-bottom: 0;">
       <app-stats-mini [activeCount]="ads().length" />
@@ -117,17 +124,13 @@ import { DecimalPipe } from '@angular/common';
           </mat-select>
         </mat-form-field>
 
-        <button mat-stroked-button type="submit">
-          <mat-icon>search</mat-icon> Szukaj
-        </button>
-        <button mat-stroked-button type="button" (click)="resetFilters()">
-          <mat-icon>clear</mat-icon> Wyczyść
-        </button>
+        <button mat-stroked-button type="submit"><mat-icon>search</mat-icon> Szukaj</button>
+        <button mat-stroked-button type="button" (click)="resetFilters()"><mat-icon>clear</mat-icon> Wyczyść</button>
       </form>
 
       @if (loading()) {
         <div class="ads-grid">
-          @for (s of [1,2,3,4,5,6]; track s) {
+          @for (s of [1, 2, 3, 4, 5, 6]; track s) {
             <div class="skeleton-card">
               <div class="skeleton skeleton-image"></div>
               <div class="skeleton-body">
@@ -141,10 +144,16 @@ import { DecimalPipe } from '@angular/common';
       } @else if (ads().length === 0) {
         <div class="empty-state">
           <svg class="empty-illustration" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="100" cy="100" r="90" fill="var(--gray-100)"/>
-            <circle cx="85" cy="85" r="30" stroke="var(--primary)" stroke-width="6" fill="none"/>
-            <line x1="107" y1="107" x2="135" y2="135" stroke="var(--primary)" stroke-width="6" stroke-linecap="round"/>
-            <path d="M60 140 Q100 160 140 140" stroke="var(--gray-400)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="90" fill="var(--gray-100)" />
+            <circle cx="85" cy="85" r="30" stroke="var(--primary)" stroke-width="6" fill="none" />
+            <line x1="107" y1="107" x2="135" y2="135" stroke="var(--primary)" stroke-width="6" stroke-linecap="round" />
+            <path
+              d="M60 140 Q100 160 140 140"
+              stroke="var(--gray-400)"
+              stroke-width="3"
+              fill="none"
+              stroke-linecap="round"
+            />
           </svg>
           <h3>Brak ogłoszeń spełniających kryteria</h3>
           <p>Spróbuj zmienić filtry lub wyczyścić wyszukiwanie.</p>
@@ -161,7 +170,11 @@ import { DecimalPipe } from '@angular/common';
               <mat-icon>chevron_left</mat-icon>
             </button>
             <span>Strona {{ currentPage() }} z {{ totalPages() }} ({{ total() | number }} ogłoszeń)</span>
-            <button mat-stroked-button [disabled]="currentPage() >= totalPages()" (click)="changePage(currentPage() + 1)">
+            <button
+              mat-stroked-button
+              [disabled]="currentPage() >= totalPages()"
+              (click)="changePage(currentPage() + 1)"
+            >
               <mat-icon>chevron_right</mat-icon>
             </button>
           </div>
@@ -174,7 +187,6 @@ export class AdsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly listingService = inject(ListingService);
   private readonly categoryService = inject(CategoryService);
-  private readonly favorites = inject(FavoritesService);
   private readonly notifications = inject(NotificationService);
 
   protected readonly ads = signal<Listing[]>([]);
@@ -207,7 +219,7 @@ export class AdsComponent implements OnInit {
   }
 
   onDeleted(id: string): void {
-    this.ads.update(list => list.filter(a => a._id !== id));
+    this.ads.update((list) => list.filter((ad) => ad._id !== id));
   }
 
   resetFilters(): void {
@@ -238,7 +250,6 @@ export class AdsComponent implements OnInit {
         this.ads.set(res.listings);
         this.totalPages.set(res.totalPages);
         this.total.set(res.total);
-        this.favorites.syncWithExisting(res.listings.map((ad) => ad._id));
         this.loading.set(false);
       },
       error: () => {
