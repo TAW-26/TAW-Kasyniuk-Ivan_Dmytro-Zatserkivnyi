@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,6 +10,25 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+
+interface HealthResponse {
+  status: 'ok' | 'degraded' | string;
+  db: string;
+  uptime: number;
+  timestamp: string;
+}
+
+interface MonitoringEvent {
+  event: string;
+  message: string;
+  time: string;
+  payload: Record<string, unknown>;
+}
+
+interface EventsResponse {
+  count: number;
+  events: MonitoringEvent[];
+}
 
 @Component({
   selector: 'app-settings',
@@ -84,6 +104,210 @@ import { NotificationService } from '../../core/services/notification.service';
         font-size: 0.75rem;
         margin-top: -0.5rem;
         margin-bottom: 0.25rem;
+      }
+      .monitoring-tab {
+        margin-top: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      .admin-banner {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        background: var(--gray-50);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.85rem 1rem;
+      }
+      .admin-banner mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+        color: var(--primary);
+      }
+      .admin-banner-title {
+        font-weight: 600;
+      }
+      .admin-banner-sub {
+        font-size: 0.85rem;
+        color: var(--gray-600);
+      }
+      .health-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+      }
+      .health-card.health-ok {
+        border-left: 4px solid #16a34a;
+      }
+      .health-card.health-bad {
+        border-left: 4px solid var(--danger);
+      }
+      .health-label {
+        font-weight: 600;
+        margin-right: 0.5rem;
+      }
+      .health-value {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--gray-700);
+      }
+      .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 0.75rem;
+      }
+      .tool-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        text-decoration: none;
+        color: var(--text);
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .tool-card:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+      }
+      .tool-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+        color: var(--primary);
+      }
+      .tool-name {
+        font-weight: 600;
+      }
+      .tool-desc {
+        font-size: 0.8rem;
+        color: var(--gray-600);
+        line-height: 1.35;
+      }
+      .tool-url {
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin-top: 0.25rem;
+      }
+      .metrics-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+      }
+      .metrics-list li {
+        padding: 0.5rem 0.75rem;
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+      }
+      .metrics-list code {
+        background: var(--gray-100);
+        padding: 0.05rem 0.35rem;
+        border-radius: 3px;
+        font-size: 0.85em;
+      }
+      .logs-hint {
+        font-size: 0.85rem;
+        color: var(--gray-700);
+        line-height: 1.5;
+      }
+      .logs-hint code {
+        background: var(--gray-100);
+        padding: 0.05rem 0.35rem;
+        border-radius: 3px;
+      }
+      .events-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 0.75rem 1rem;
+      }
+      .events-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+      }
+      .events-empty {
+        color: var(--gray-600);
+        font-size: 0.85rem;
+        font-style: italic;
+        margin: 0.5rem 0;
+      }
+      .events-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 320px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .event-row {
+        display: grid;
+        grid-template-columns: 110px 140px 1fr;
+        gap: 0.6rem;
+        align-items: center;
+        padding: 0.4rem 0.6rem;
+        background: var(--gray-50);
+        border-radius: 4px;
+        font-size: 0.82rem;
+      }
+      .event-time {
+        color: var(--gray-600);
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+      }
+      .event-tag {
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.7rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .event-row[data-evt='listing.delete.forbidden'] .event-tag,
+      .event-row[data-evt='listing.deleted'] .event-tag {
+        background: var(--danger);
+      }
+      .event-row[data-evt='auth.login'] .event-tag {
+        background: #16a34a;
+      }
+      .event-msg {
+        color: var(--text);
+      }
+      @media (max-width: 600px) {
+        .event-row {
+          grid-template-columns: 1fr;
+          gap: 0.15rem;
+        }
       }
     `,
   ],
@@ -218,15 +442,123 @@ import { NotificationService } from '../../core/services/notification.service';
               </button>
             </div>
           </mat-tab>
+
+          @if (auth.isAdmin()) {
+            <mat-tab label="Monitoring">
+              <div class="monitoring-tab">
+                <div class="admin-banner">
+                  <mat-icon>shield</mat-icon>
+                  <div>
+                    <div class="admin-banner-title">Panel administratora</div>
+                    <div class="admin-banner-sub">
+                      Ta zakładka jest widoczna tylko dla użytkowników z rolą <strong>admin</strong>.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="health-card" [class.health-ok]="health()?.status === 'ok'" [class.health-bad]="health()?.status && health()?.status !== 'ok'">
+                  <div class="health-row">
+                    <span class="health-label">Status backendu</span>
+                    <span class="health-value">
+                      @if (healthLoading()) {
+                        Sprawdzanie...
+                      } @else if (health()) {
+                        {{ health()!.status }} • DB: {{ health()!.db }} • uptime {{ health()!.uptime }}s
+                      } @else {
+                        Brak połączenia z /health
+                      }
+                    </span>
+                  </div>
+                  <button mat-stroked-button (click)="refreshHealth()" [disabled]="healthLoading()">
+                    <mat-icon>refresh</mat-icon>
+                    Odśwież
+                  </button>
+                </div>
+
+                <div class="tab-section-title">Narzędzia mojego stosu</div>
+                <div class="tools-grid">
+                  <a class="tool-card" href="http://localhost:3000" target="_blank" rel="noopener">
+                    <mat-icon class="tool-icon">analytics</mat-icon>
+                    <div class="tool-name">Grafana</div>
+                    <div class="tool-desc">Dashboard z wykresami (request rate, latency, RAM, CPU)</div>
+                    <div class="tool-url">localhost:3000</div>
+                  </a>
+                  <a class="tool-card" href="http://localhost:9090/targets" target="_blank" rel="noopener">
+                    <mat-icon class="tool-icon">radar</mat-icon>
+                    <div class="tool-name">Prometheus</div>
+                    <div class="tool-desc">Status scrape'a, surowe metryki, ad-hoc queries</div>
+                    <div class="tool-url">localhost:9090/targets</div>
+                  </a>
+                  <a class="tool-card" href="http://localhost:5000/health" target="_blank" rel="noopener">
+                    <mat-icon class="tool-icon">monitor_heart</mat-icon>
+                    <div class="tool-name">Healthcheck</div>
+                    <div class="tool-desc">Uptime + status DB (publiczny endpoint dla UptimeRobota)</div>
+                    <div class="tool-url">localhost:5000/health</div>
+                  </a>
+                  <button class="tool-card" type="button" (click)="copyMetricsCmd()">
+                    <mat-icon class="tool-icon">content_copy</mat-icon>
+                    <div class="tool-name">Skopiuj curl /metrics</div>
+                    <div class="tool-desc">Wymagany Bearer METRICS_TOKEN — kopiuje gotowy curl do schowka</div>
+                    <div class="tool-url">curl -H "Authorization: Bearer ..."</div>
+                  </button>
+                  <button class="tool-card" type="button" (click)="copyRssCmd()">
+                    <mat-icon class="tool-icon">rss_feed</mat-icon>
+                    <div class="tool-name">Skopiuj curl /events.rss</div>
+                    <div class="tool-desc">RSS feed ostatnich zdarzeń (login, register, usunięcia, błędy)</div>
+                    <div class="tool-url">/api/monitoring/events.rss</div>
+                  </button>
+                </div>
+
+                <div class="tab-section-title">Ostatnie zdarzenia (RSS)</div>
+                <div class="events-card">
+                  <div class="events-header">
+                    <span>{{ events().length }} zdarzeń w buforze (max 100)</span>
+                    <button mat-stroked-button (click)="refreshEvents()" [disabled]="eventsLoading()">
+                      <mat-icon>refresh</mat-icon>
+                      Odśwież
+                    </button>
+                  </div>
+                  @if (events().length === 0 && !eventsLoading()) {
+                    <p class="events-empty">Brak zdarzeń. Zaloguj się ponownie albo usuń ogłoszenie, by je wygenerować.</p>
+                  }
+                  <ul class="events-list">
+                    @for (e of events(); track e.time) {
+                      <li class="event-row" [attr.data-evt]="e.event">
+                        <div class="event-time">{{ formatTime(e.time) }}</div>
+                        <div class="event-tag">{{ e.event }}</div>
+                        <div class="event-msg">{{ e.message }}</div>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <div class="tab-section-title">Eksponowane metryki</div>
+                <ul class="metrics-list">
+                  <li><code>http_requests_total</code> — Counter, etykiety: method/route/status_code</li>
+                  <li><code>http_request_duration_ms</code> — Histogram, kubełki [5, 10, 25, 50, 100, 250, 500, 1000]</li>
+                  <li><code>active_connections</code> — Gauge, aktualnie obsługiwane połączenia</li>
+                  <li><code>process_*</code>, <code>nodejs_*</code> — CPU, RSS, heap, event loop lag (z prom-client)</li>
+                </ul>
+
+                <div class="tab-section-title">Logi aplikacji</div>
+                <p class="logs-hint">
+                  Lokalne logi JSON są zapisywane w katalogu <code>backend/logs/</code> z dzienną rotacją (pino + pino-roll).
+                  Hasła i tokeny są automatycznie redagowane jako <code>[REDACTED]</code>.
+                  Pełny opis: <a href="https://github.com/TAW-26/TAW-Kasyniuk-Ivan_Dmytro-Zatserkivnyi/blob/main/docs/monitoring.md" target="_blank">docs/monitoring.md</a>.
+                </p>
+              </div>
+            </mat-tab>
+          }
         </mat-tab-group>
       </div>
     </div>
   `,
 })
-export class SettingsComponent {
-  private readonly auth = inject(AuthService);
+export class SettingsComponent implements OnInit {
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   protected currentPassword = '';
   protected newPassword = '';
@@ -242,6 +574,74 @@ export class SettingsComponent {
   protected privacyTrustedOnly = false;
 
   protected readonly darkMode = signal(localStorage.getItem('theme') === 'dark');
+
+  protected readonly health = signal<HealthResponse | null>(null);
+  protected readonly healthLoading = signal(false);
+  protected readonly events = signal<MonitoringEvent[]>([]);
+  protected readonly eventsLoading = signal(false);
+
+  ngOnInit(): void {
+    if (this.auth.isAdmin()) {
+      this.refreshHealth();
+      this.refreshEvents();
+    }
+  }
+
+  refreshEvents(): void {
+    this.eventsLoading.set(true);
+    this.http.get<EventsResponse>('/api/monitoring/events.json').subscribe({
+      next: (res) => {
+        this.events.set(res.events);
+        this.eventsLoading.set(false);
+      },
+      error: () => {
+        this.events.set([]);
+        this.eventsLoading.set(false);
+      },
+    });
+  }
+
+  formatTime(iso: string): string {
+    return new Date(iso).toLocaleTimeString('pl-PL');
+  }
+
+  copyRssCmd(): void {
+    const cmd = 'curl -H "Authorization: Bearer <METRICS_TOKEN>" http://localhost:5000/api/monitoring/events.rss';
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard
+        .writeText(cmd)
+        .then(() => this.notifications.show('Skopiowano: curl /events.rss'))
+        .catch(() => this.notifications.show('Nie udało się skopiować'));
+    } else {
+      this.notifications.show(cmd);
+    }
+  }
+
+  refreshHealth(): void {
+    this.healthLoading.set(true);
+    this.http.get<HealthResponse>('/health').subscribe({
+      next: (res) => {
+        this.health.set(res);
+        this.healthLoading.set(false);
+      },
+      error: () => {
+        this.health.set(null);
+        this.healthLoading.set(false);
+      },
+    });
+  }
+
+  copyMetricsCmd(): void {
+    const cmd = 'curl -H "Authorization: Bearer <METRICS_TOKEN>" http://localhost:5000/metrics';
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard
+        .writeText(cmd)
+        .then(() => this.notifications.show('Skopiowano: curl /metrics'))
+        .catch(() => this.notifications.show('Nie udało się skopiować'));
+    } else {
+      this.notifications.show(cmd);
+    }
+  }
 
   toggleTheme(): void {
     this.darkMode.update((v) => !v);

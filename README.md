@@ -158,7 +158,9 @@ Tests:       9 passed, 9 total
 
 Pliki `*.spec.ts` są wykluczone z buildu aplikacji w `frontend/tsconfig.app.json`, dlatego `npx ng serve` uruchamia aplikację, a `npm test` uruchamia testy.
 
-## Monitoring (Prometheus + Grafana, bez Dockera)
+## Monitoring (Prometheus + Grafana + pino logs, bez Dockera)
+
+> **Pełna dokumentacja monitoringu:** [`docs/monitoring.md`](docs/monitoring.md) — opis całego stosu, audit log, healthcheck, integracja z UptimeRobotem, smoke-testy, alerty.
 
 Backend udostępnia metryki w formacie Prometheusa pod adresem `GET /metrics`.
 Endpoint jest **chroniony**:
@@ -259,7 +261,8 @@ backend/
 │   ├── adminMiddleware.js       # weryfikacja roli administratora
 │   ├── metricsMiddleware.js     # pomiar HTTP (req/s, latency, active connections)
 │   ├── metricsAuthMiddleware.js # ochrona /metrics (METRICS_TOKEN albo JWT admina)
-│   └── errorHandler.js         # globalny handler błędów
+│   ├── httpLoggerMiddleware.js  # pino-http: log każdego requestu z UUID + status + duration
+│   └── errorHandler.js          # globalny handler błędów (loguje 5xx z full stack)
 ├── models/
 │   ├── User.js                  # użytkownik (avatar, telefon, rola, isVerified,
 │   │                            # refreshToken, favorites[])
@@ -274,6 +277,10 @@ backend/
 │   └── admin.js                 # endpointy panelu admina
 ├── seed.js                      # skrypt inicjalizujący bazę danych
 ├── server.js                    # start serwera, walidacja env, połączenie z bazą
+├── utils/
+│   ├── logger.js                # pino logger (JSON do plików + pretty do konsoli)
+│   └── acl.js                   # canModifyListing — owner-or-admin check
+├── logs/                        # zapisywane logi pino (gitignore'owane)
 ├── prometheus.yml               # konfiguracja scrape'a Prometheusa (lokalnie, bez Dockera)
 ├── grafana-dashboard.json       # gotowy dashboard do importu w Grafanie
 └── package.json
@@ -322,8 +329,8 @@ frontend/
 | GET    | `/api/listings/user/my`         | Ogłoszenia zalogowanego użytkownika                       | JWT       |
 | POST   | `/api/listings`                 | Dodanie ogłoszenia (max 5 zdjęć, max 2 MB)               | JWT       |
 | POST   | `/api/listings/:id/mark-sold`   | Oznaczenie jako sprzedane (tylko właściciel)              | JWT       |
-| PUT    | `/api/listings/:id`             | Edycja (właściciel lub admin)                             | JWT       |
-| DELETE | `/api/listings/:id`             | Usunięcie (właściciel lub admin)                          | JWT       |
+| PUT    | `/api/listings/:id`             | Edycja (tylko właściciel)                                 | JWT       |
+| DELETE | `/api/listings/:id`             | Usunięcie (właściciel **lub admin** — admin może usunąć dowolne ogłoszenie) | JWT |
 
 **Parametry filtrowania GET `/api/listings`:**
 
