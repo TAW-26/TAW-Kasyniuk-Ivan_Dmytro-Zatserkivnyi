@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'list-app-monitor'
+
+scrape_configs:
+  - job_name: 'list-app-backend'
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['localhost:5000']
+        labels:
+          service: 'list-app-backend'
+          env: 'local'
+    authorization:
+      type: Bearer
+      credentials: 'local-prom-secret-change-me'
