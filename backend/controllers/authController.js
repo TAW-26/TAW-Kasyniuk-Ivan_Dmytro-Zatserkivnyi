@@ -5,6 +5,8 @@ const Listing = require('../models/Listing');
 const Message = require('../models/Message');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
+const events = require('../utils/eventsBuffer');
 
 const IS_DEV = process.env.NODE_ENV !== 'production';
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -55,6 +57,11 @@ exports.register = async (req, res, next) => {
     }
 
     const { password: _p, verificationToken: _v, refreshToken: _r, ...userData } = user.toObject();
+    logger.info(
+      { event: 'auth.register', userId: user._id.toString(), email: user.email },
+      'User registered',
+    );
+    events.push('auth.register', { userId: user._id.toString(), email: user.email }, `Nowy użytkownik: ${user.email}`);
     res.status(201).json({ ...userData, requiresVerification: !IS_DEV });
   } catch (err) {
     next(err);
@@ -68,12 +75,25 @@ exports.login = async (req, res, next) => {
       return res.status(400).json({ message: 'Email i hasło są wymagane' });
     }
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+    if (!user) {
+      logger.warn({ event: 'auth.login.failed', reason: 'user_not_found', email }, 'Login failed');
+      return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+    }
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).json({ message: 'Nieprawidłowe hasło' });
+    if (!valid) {
+      logger.warn(
+        { event: 'auth.login.failed', reason: 'wrong_password', userId: user._id.toString() },
+        'Login failed',
+      );
+      return res.status(400).json({ message: 'Nieprawidłowe hasło' });
+    }
 
     if (!IS_DEV && !user.isVerified) {
+      logger.warn(
+        { event: 'auth.login.failed', reason: 'not_verified', userId: user._id.toString() },
+        'Login blocked - email not verified',
+      );
       return res.status(403).json({
         message: 'Konto nie zostało zweryfikowane. Sprawdź skrzynkę pocztową.',
         code: 'EMAIL_NOT_VERIFIED',
@@ -89,6 +109,15 @@ exports.login = async (req, res, next) => {
     res.cookie('refreshToken', refreshToken, REFRESH_COOKIE);
 
     const { password: _p, verificationToken: _v, refreshToken: _r, ...userData } = user.toObject();
+    logger.info(
+      { event: 'auth.login', userId: user._id.toString(), role: user.role },
+      'User logged in',
+    );
+    events.push(
+      'auth.login',
+      { userId: user._id.toString(), role: user.role, email: user.email },
+      `Logowanie: ${user.email} (${user.role})`,
+    );
     res.json({ user: userData, accessToken });
   } catch (err) {
     next(err);
@@ -124,7 +153,13 @@ exports.logout = async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken;
     if (token) {
-      await User.findOneAndUpdate({ refreshToken: hashToken(token) }, { $unset: { refreshToken: 1 } });
+      const updated = await User.findOneAndUpdate(
+        { refreshToken: hashToken(token) },
+        { $unset: { refreshToken: 1 } },
+      );
+      if (updated) {
+        logger.info({ event: 'auth.logout', userId: updated._id.toString() }, 'User logged out');
+      }
     }
     res.clearCookie('refreshToken', { ...REFRESH_COOKIE, maxAge: 0 });
     res.json({ message: 'Wylogowano' });

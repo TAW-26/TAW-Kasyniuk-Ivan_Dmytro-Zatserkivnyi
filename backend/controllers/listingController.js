@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 const Listing = require('../models/Listing');
+const { canModifyListing } = require('../utils/acl');
+const logger = require('../utils/logger');
+const events = require('../utils/eventsBuffer');
 
 const POPULATE_USER_PUBLIC = 'username phone';
 const POPULATE_USER_OWNER = 'username email phone';
@@ -209,11 +212,47 @@ exports.remove = async (req, res, next) => {
 
     const listing = await Listing.findById(req.params.id);
     if (!listing) return res.status(404).json({ message: 'Ogłoszenie nie znalezione' });
-    if (listing.user_id.toString() !== req.user.id && req.user.role !== 'admin') {
+
+    const acl = await canModifyListing(listing, req.user.id);
+    if (!acl.allowed) {
+      logger.warn(
+        { event: 'listing.delete.forbidden', listingId: req.params.id, actorId: req.user.id },
+        'Listing delete blocked',
+      );
       return res.status(403).json({ message: 'Brak uprawnień' });
     }
+
     await Listing.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Ogłoszenie usunięte', _id: req.params.id });
+
+    const msg =
+      acl.reason === 'admin'
+        ? `Admin usunął cudze ogłoszenie: "${listing.title}"`
+        : `Właściciel usunął ogłoszenie: "${listing.title}"`;
+
+    logger.info(
+      {
+        event: 'listing.deleted',
+        listingId: req.params.id,
+        actorId: req.user.id,
+        ownerId: listing.user_id.toString(),
+        actorRole: acl.reason,
+        title: listing.title,
+      },
+      msg,
+    );
+    events.push(
+      'listing.deleted',
+      {
+        listingId: req.params.id,
+        actorId: req.user.id,
+        ownerId: listing.user_id.toString(),
+        actorRole: acl.reason,
+        title: listing.title,
+      },
+      msg,
+    );
+
+    res.json({ message: 'Ogłoszenie usunięte', _id: req.params.id, deletedBy: acl.reason });
   } catch (err) {
     next(err);
   }

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -13,8 +14,23 @@ app.use(
 app.use(cookieParser());
 app.use(express.json({ limit: '20mb' }));
 
+const httpLogger = require('./middleware/httpLoggerMiddleware');
+app.use(httpLogger);
+
 const { register: metricsRegister } = require('./metrics');
 const metricsAuth = require('./middleware/metricsAuthMiddleware');
+
+app.get('/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatus = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : 'disconnected';
+  const httpStatus = dbState === 1 ? 200 : 503;
+  res.status(httpStatus).json({
+    status: dbState === 1 ? 'ok' : 'degraded',
+    db: dbStatus,
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.get('/metrics', metricsAuth, async (req, res, next) => {
   try {
@@ -33,12 +49,14 @@ const listingRoutes = require('./routes/listings');
 const categoryRoutes = require('./routes/categories');
 const adminRoutes = require('./routes/admin');
 const messageRoutes = require('./routes/messages');
+const monitoringRoutes = require('./routes/monitoring');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 app.get('/', (req, res) => {
   res.send('API dziala');
