@@ -50,6 +50,9 @@ Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowan
 | `PORT`               | Port serwera (domyślnie `5000`)                         | nie      |
 | `FRONTEND_URL`       | Adres frontendu dla CORS (wymagany w produkcji)         | prod     |
 | `NODE_ENV`           | `production` włącza weryfikację email i secure cookies  | nie      |
+| `METRICS_TOKEN`      | Token Bearer dla Prometheusa do scrape'owania `/metrics`| nie\*    |
+
+> \* Bez `METRICS_TOKEN` Prometheus nie może scrape'ować `/metrics` (zwraca `401`/`403`). Endpoint jest też dostępny dla zalogowanego administratora (JWT z rolą `admin`).
 
 > Serwer nie uruchomi się bez `MONGO_URI`, `JWT_SECRET` i `JWT_REFRESH_SECRET`. W trybie `production` wymagany jest też `FRONTEND_URL`.
 
@@ -155,6 +158,73 @@ Tests:       9 passed, 9 total
 
 Pliki `*.spec.ts` są wykluczone z buildu aplikacji w `frontend/tsconfig.app.json`, dlatego `npx ng serve` uruchamia aplikację, a `npm test` uruchamia testy.
 
+## Monitoring (Prometheus + Grafana, bez Dockera)
+
+Backend udostępnia metryki w formacie Prometheusa pod adresem `GET /metrics`.
+Endpoint jest **chroniony**:
+
+- **Prometheus** scrape'uje go z nagłówkiem `Authorization: Bearer <METRICS_TOKEN>` (token z `backend/.env`).
+- **Administrator** może też ręcznie podejrzeć metryki w przeglądarce — wystarczy zalogowany użytkownik z rolą `admin` i jego access token (`Authorization: Bearer <JWT>`).
+- **Zwykły użytkownik** zawsze dostanie `403` — nie ma dostępu do metryk.
+
+### Eksponowane metryki
+
+| Metryka                     | Typ        | Opis                                                                  |
+|-----------------------------|------------|------------------------------------------------------------------------|
+| `http_requests_total`       | Counter    | Liczba żądań HTTP, etykiety: `method`, `route`, `status_code`         |
+| `http_request_duration_ms`  | Histogram  | Czas odpowiedzi w ms, kubełki `[5, 10, 25, 50, 100, 250, 500, 1000]`  |
+| `active_connections`        | Gauge      | Liczba aktualnie obsługiwanych połączeń HTTP                           |
+| `process_*`, `nodejs_*`     | (default)  | CPU, RSS, heap, event loop lag, GC (z `prom-client`)                  |
+
+> Etykieta `route` używa **wzorca trasy** (`/api/listings/:id`), nie pełnego URL — to chroni Prometheusa przed wybuchem kardynalności.
+
+### 1. Instalacja Prometheusa lokalnie (Windows, bez Dockera)
+
+1. Pobierz najnowszą wersję dla Windows z [prometheus.io/download](https://prometheus.io/download/) (plik `prometheus-*.windows-amd64.zip`).
+2. Rozpakuj np. do `C:\tools\prometheus`.
+3. Skopiuj `backend\prometheus.yml` z tego repo do katalogu Prometheusa (lub uruchamiaj wskazując ścieżkę).
+4. **Przed pierwszym uruchomieniem** ustaw ten sam token w obu miejscach:
+   - `backend/.env` — `METRICS_TOKEN=...`
+   - `prometheus.yml` — `authorization.credentials: '...'`
+5. Uruchom Prometheusa:
+
+   ```powershell
+   cd C:\tools\prometheus
+   .\prometheus.exe --config.file=E:\Projects\TAW-Kasyniuk-Ivan_Dmytro-Zatserkivnyi\backend\prometheus.yml
+   ```
+
+6. UI Prometheusa: <http://localhost:9090>. Status scrape'a: **Status → Targets** — `list-app-backend` powinien być `UP`.
+
+### 2. Instalacja Grafany lokalnie (Windows, bez Dockera)
+
+1. Pobierz Grafana OSS dla Windows z [grafana.com/grafana/download](https://grafana.com/grafana/download?platform=windows) (instalator MSI lub standalone ZIP).
+2. Uruchom Grafanę — domyślnie nasłuchuje na <http://localhost:3000>.
+3. Pierwsze logowanie: `admin` / `admin` (Grafana wymusi zmianę hasła).
+4. **Dodaj datasource:** Connections → Data sources → Add new data source → **Prometheus** → URL: `http://localhost:9090` → **Save & Test**.
+5. **Importuj dashboard:** Dashboards → New → Import → **Upload JSON file** → wybierz `backend/grafana-dashboard.json` → wybierz dodany Prometheus jako datasource → Import.
+
+### 3. Wygenerowanie ruchu i podgląd metryk
+
+1. Uruchom backend: `cd backend && npm run dev`.
+2. Wykonaj kilka żądań (np. otwórz frontend i kliknij po listingach, albo `curl http://localhost:5000/api/listings`).
+3. Otwórz dashboard w Grafanie — w ciągu kilkunastu sekund pojawią się dane: request rate, p50/p95/p99 latency, active connections, status codes, RSS / heap, CPU.
+
+### 4. Ręczny podgląd metryk (opcjonalnie)
+
+Jako admin (po zalogowaniu na `admin@listapp.pl` / `admin123` zdobądź access token i wywołaj):
+
+```bash
+curl -H "Authorization: Bearer <ADMIN_ACCESS_TOKEN>" http://localhost:5000/metrics
+```
+
+Albo z tokenem dla Prometheusa:
+
+```bash
+curl -H "Authorization: Bearer <METRICS_TOKEN>" http://localhost:5000/metrics
+```
+
+Bez nagłówka — `401`. Z tokenem zwykłego użytkownika — `403`.
+
 ## Technologie
 
 | Warstwa      | Technologie                                                              |
@@ -182,9 +252,13 @@ backend/
 │   ├── categoryController.js    # CRUD kategorii (tylko admin)
 │   ├── messageController.js     # czat: rozmowy, wiadomości, auto-reply, licznik
 │   └── adminController.js       # zarządzanie użytkownikami i rolami
+├── metrics/
+│   └── index.js                 # rejestr prom-client + Counter/Histogram/Gauge
 ├── middleware/
 │   ├── authMiddleware.js        # weryfikacja JWT (401 TOKEN_EXPIRED / 403 invalid)
 │   ├── adminMiddleware.js       # weryfikacja roli administratora
+│   ├── metricsMiddleware.js     # pomiar HTTP (req/s, latency, active connections)
+│   ├── metricsAuthMiddleware.js # ochrona /metrics (METRICS_TOKEN albo JWT admina)
 │   └── errorHandler.js         # globalny handler błędów
 ├── models/
 │   ├── User.js                  # użytkownik (avatar, telefon, rola, isVerified,
@@ -200,6 +274,8 @@ backend/
 │   └── admin.js                 # endpointy panelu admina
 ├── seed.js                      # skrypt inicjalizujący bazę danych
 ├── server.js                    # start serwera, walidacja env, połączenie z bazą
+├── prometheus.yml               # konfiguracja scrape'a Prometheusa (lokalnie, bez Dockera)
+├── grafana-dashboard.json       # gotowy dashboard do importu w Grafanie
 └── package.json
 
 frontend/src/app/

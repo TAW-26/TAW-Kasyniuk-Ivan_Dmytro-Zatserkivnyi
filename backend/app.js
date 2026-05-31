@@ -13,6 +13,21 @@ app.use(
 app.use(cookieParser());
 app.use(express.json({ limit: '20mb' }));
 
+const { register: metricsRegister } = require('./metrics');
+const metricsAuth = require('./middleware/metricsAuthMiddleware');
+
+app.get('/metrics', metricsAuth, async (req, res, next) => {
+  try {
+    res.set('Content-Type', metricsRegister.contentType);
+    res.end(await metricsRegister.metrics());
+  } catch (err) {
+    next(err);
+  }
+});
+
+const metricsMiddleware = require('./middleware/metricsMiddleware');
+app.use(metricsMiddleware);
+
 const authRoutes = require('./routes/auth');
 const listingRoutes = require('./routes/listings');
 const categoryRoutes = require('./routes/categories');
