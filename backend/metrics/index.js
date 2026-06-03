@@ -29,9 +29,25 @@ const activeConnections = new client.Gauge({
   registers: [register],
 });
 
+const slowRequestsTotal = new client.Counter({
+  name: 'slow_requests_total',
+  help: 'Liczba żądań HTTP wolniejszych niż próg SLOW_REQUEST_THRESHOLD_MS',
+  labelNames: ['method', 'route', 'status_code'],
+  registers: [register],
+});
+
+const httpErrorsTotal = new client.Counter({
+  name: 'http_errors_total',
+  help: 'Liczba odpowiedzi błędnych (4xx/5xx) z podziałem na typ',
+  labelNames: ['method', 'route', 'status_code', 'error_class'],
+  registers: [register],
+});
+
 module.exports = {
   register,
   httpRequestsTotal,
   httpRequestDurationMs,
   activeConnections,
+  slowRequestsTotal,
+  httpErrorsTotal,
 };
