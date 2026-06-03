@@ -14,4 +14,11 @@ const listingSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+listingSchema.index({ status: 1, createdAt: -1 });
+listingSchema.index({ category_id: 1, status: 1, createdAt: -1 });
+listingSchema.index({ user_id: 1, createdAt: -1 });
+listingSchema.index({ price: 1 });
+listingSchema.index({ location: 1 });
+listingSchema.index({ title: 'text', description: 'text' });
+
 module.exports = mongoose.model('Listing', listingSchema);

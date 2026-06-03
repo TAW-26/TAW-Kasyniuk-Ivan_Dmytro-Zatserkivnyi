@@ -11,13 +11,15 @@
     "format": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --write \"**/*.js\" \"*.json\"",
     "format:check": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --check \"**/*.js\" \"*.json\"",
     "seed": "node seed.js",
-    "clear-listings": "node scripts/clearListings.js"
+    "clear-listings": "node scripts/clearListings.js",
+    "loadtest": "node scripts/loadtest.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "autocannon": "^8.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.2",
     "jest": "^30.4.2",
