@@ -1,46 +1,32 @@
-# API Documentation — ListApp
+# API Bazarek
 
-Base URL: `http://localhost:5000`
+Domyślny lokalny base URL: `http://localhost:5000`.
 
----
-
-## Auth
-
-### POST /api/auth/register
-
-Rejestracja nowego uzytkownika.
+Chronione endpointy wymagają nagłówka:
 
 ```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "username": "Jan Kowalski",
-  "email": "jan@example.com",
-  "password": "haslo123"
-}
+Authorization: Bearer <accessToken>
 ```
 
-**201 Created**
-```json
-{
-  "_id": "664a...",
-  "username": "Jan Kowalski",
-  "email": "jan@example.com",
-  "phone": "",
-  "role": "user",
-  "createdAt": "2025-01-15T10:00:00.000Z",
-  "updatedAt": "2025-01-15T10:00:00.000Z"
-}
-```
+Access token jest ważny 15 minut. Refresh token jest ważny 7 dni i jest przechowywany w httpOnly cookie pod ścieżką `/api/auth`.
 
-**400** — brakujace pola lub email juz istnieje.
+## Auth i konto
 
----
+| Metoda | Endpoint | Dostęp | Opis |
+|--------|----------|--------|------|
+| POST | `/api/auth/register` | publiczny, rate limit | Rejestracja użytkownika |
+| POST | `/api/auth/login` | publiczny, rate limit | Zwraca `user` i `accessToken`, ustawia refresh cookie |
+| POST | `/api/auth/refresh` | refresh cookie | Nowy access token |
+| POST | `/api/auth/logout` | refresh cookie | Wylogowanie i unieważnienie refresh tokenu |
+| GET | `/api/auth/verify/:token` | publiczny | Weryfikacja email |
+| GET | `/api/auth/me` | JWT | Profil zalogowanego użytkownika |
+| PUT | `/api/auth/me` | JWT | Aktualizacja `username`, `phone` i `avatar` |
+| PUT | `/api/auth/me/password` | JWT | Zmiana hasła |
+| DELETE | `/api/auth/me` | JWT | Usunięcie konta, ogłoszeń i wiadomości |
+| POST | `/api/auth/favorites/toggle/:id` | JWT | Dodanie lub usunięcie ulubionego |
+| DELETE | `/api/auth/favorites` | JWT | Wyczyszczenie ulubionych |
 
-### POST /api/auth/login
-
-Logowanie — zwraca JWT token.
+Przykład logowania:
 
 ```http
 POST /api/auth/login
@@ -52,7 +38,6 @@ Content-Type: application/json
 }
 ```
 
-**200 OK**
 ```json
 {
   "user": {
@@ -61,277 +46,97 @@ Content-Type: application/json
     "email": "jan@example.com",
     "role": "user"
   },
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
-**400** — brakujace pola lub nieprawidlowe haslo.
-**404** — uzytkownik nie znaleziony.
+W trybie `production` nowy użytkownik nie może się zalogować przed weryfikacją email. Link weryfikacyjny jest generowany w logach backendu.
 
----
+## Ogłoszenia
 
-## Listings
+| Metoda | Endpoint | Dostęp | Opis |
+|--------|----------|--------|------|
+| GET | `/api/listings` | publiczny | Lista, filtry, sortowanie i paginacja |
+| GET | `/api/listings/:id` | publiczny | Szczegóły ogłoszenia |
+| GET | `/api/listings/user/my` | JWT | Własne ogłoszenia |
+| POST | `/api/listings` | JWT | Dodanie ogłoszenia |
+| POST | `/api/listings/:id/mark-sold` | JWT, właściciel | Oznaczenie jako sprzedane |
+| PUT | `/api/listings/:id` | JWT, właściciel | Edycja ogłoszenia |
+| DELETE | `/api/listings/:id` | JWT, właściciel lub admin | Usunięcie ogłoszenia |
 
-### GET /api/listings
+Parametry `GET /api/listings`:
 
-Lista ogloszen (publiczny).
+| Parametr | Opis |
+|----------|------|
+| `search` | Wyszukiwanie w tytule i opisie |
+| `category` | ID kategorii |
+| `status` | `active`, `inactive` lub `sold` |
+| `sort` | `price_asc` lub `price_desc`; domyślnie najnowsze |
+| `page` | Numer strony, minimum 1 |
+| `limit` | Liczba wyników, od 1 do 100 |
+| `minPrice`, `maxPrice` | Zakres ceny |
+| `location` | Lokalizacja, bez rozróżniania wielkości liter |
+| `ids` | Lista ID rozdzielona przecinkami |
 
-```http
-GET /api/listings
-GET /api/listings?search=laptop
-GET /api/listings?category=664a...&status=active&sort=price_asc
-```
+Dodawanie i edycja obsługują do 5 zdjęć po maksymalnie 2 MB, przekazanych jako data URL.
 
-Query params:
-| Param      | Opis                                          |
-|------------|-----------------------------------------------|
-| `search`   | Szukaj w tytule i opisie (regex, case-insensitive) |
-| `category` | Filtruj po `category_id`                      |
-| `status`   | `active`, `inactive`, `sold`                  |
-| `sort`     | `price_asc`, `price_desc` (domyslnie: najnowsze) |
+## Kategorie
 
-**200 OK** — tablica ogloszen z populowanymi `user_id` i `category_id`.
+| Metoda | Endpoint | Dostęp | Opis |
+|--------|----------|--------|------|
+| GET | `/api/categories` | publiczny | Lista kategorii |
+| POST | `/api/categories` | JWT + admin | Dodanie kategorii |
+| PUT | `/api/categories/:id` | JWT + admin | Edycja kategorii |
+| DELETE | `/api/categories/:id` | JWT + admin | Usunięcie kategorii |
 
----
+## Wiadomości
 
-### GET /api/listings/:id
+| Metoda | Endpoint | Dostęp | Opis |
+|--------|----------|--------|------|
+| GET | `/api/messages` | JWT | Lista rozmów |
+| GET | `/api/messages/unread-count` | JWT | Licznik nieprzeczytanych |
+| GET | `/api/messages/with/:userId` | JWT | Rozmowa z użytkownikiem i oznaczenie jako przeczytane |
+| POST | `/api/messages` | JWT | Wysłanie wiadomości |
 
-Pojedyncze ogloszenie (publiczny).
+Treść `POST /api/messages`:
 
-```http
-GET /api/listings/664a1234abcd5678ef901234
-```
-
-**200 OK** — obiekt ogloszenia.
-**404** — ogloszenie nie znalezione.
-
----
-
-### GET /api/listings/user/my
-
-Ogloszenia zalogowanego uzytkownika. **Wymaga JWT.**
-
-```http
-GET /api/listings/user/my
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**200 OK** — tablica ogloszen uzytkownika.
-
----
-
-### POST /api/listings
-
-Dodanie ogloszenia. **Wymaga JWT.**
-
-```http
-POST /api/listings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Content-Type: application/json
-
+```json
 {
-  "title": "Laptop Dell XPS 15",
-  "description": "16GB RAM, 512GB SSD, stan bardzo dobry",
-  "price": 3500,
-  "location": "Warszawa",
-  "category_id": "664a..."
+  "to": "ID_ODBIORCY",
+  "content": "Czy ogłoszenie jest aktualne?",
+  "listing_id": "OPCJONALNE_ID_OGLOSZENIA"
 }
 ```
 
-**201 Created** — utworzone ogloszenie.
-**400** — brakujace wymagane pola (title, description, category_id).
-
----
-
-### PUT /api/listings/:id
-
-Edycja ogloszenia (tylko wlasciciel). **Wymaga JWT.**
-
-```http
-PUT /api/listings/664a1234abcd5678ef901234
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Content-Type: application/json
-
-{
-  "title": "Laptop Dell XPS 15 — OBNIZKA",
-  "price": 2900,
-  "status": "active"
-}
-```
-
-**200 OK** — zaktualizowane ogloszenie.
-**403** — brak uprawnien (nie jestes wlascicielem).
-**404** — ogloszenie nie znalezione.
-
----
-
-### DELETE /api/listings/:id
-
-Usuniecie ogloszenia (wlasciciel lub admin). **Wymaga JWT.**
-
-```http
-DELETE /api/listings/664a1234abcd5678ef901234
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**200 OK** — `{ "message": "Ogloszenie usuniete" }`
-**403** — brak uprawnien.
-**404** — ogloszenie nie znalezione.
-
----
-
-## Categories
-
-### GET /api/categories
-
-Lista kategorii (publiczny).
-
-```http
-GET /api/categories
-```
-
-**200 OK** — tablica kategorii posortowana po nazwie.
-
----
-
-### POST /api/categories
-
-Dodanie kategorii. **Wymaga JWT.**
-
-```http
-POST /api/categories
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Content-Type: application/json
-
-{
-  "name": "Elektronika"
-}
-```
-
-**201 Created** — utworzona kategoria.
-**400** — brak nazwy lub kategoria juz istnieje.
-
----
-
-### PUT /api/categories/:id
-
-Edycja kategorii. **Wymaga JWT.**
-
-```http
-PUT /api/categories/664a1234abcd5678ef901234
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Content-Type: application/json
-
-{
-  "name": "Elektronika i Gadgety"
-}
-```
-
-**200 OK** — zaktualizowana kategoria.
-**400** — brak nazwy lub nazwa juz zajeta.
-**404** — kategoria nie znaleziona.
-
----
-
-### DELETE /api/categories/:id
-
-Usuniecie kategorii. **Wymaga JWT.**
-
-```http
-DELETE /api/categories/664a1234abcd5678ef901234
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**200 OK** — `{ "message": "Kategoria usunieta" }`
-**404** — kategoria nie znaleziona.
-
----
-
-## Admin
-
-Wszystkie endpointy wymagaja JWT + rola `admin`.
-
-### GET /api/admin/users
-
-Lista uzytkownikow.
-
-```http
-GET /api/admin/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**200 OK** — tablica uzytkownikow (bez hasel).
-
----
-
-### GET /api/admin/users/:id
-
-Pojedynczy uzytkownik.
-
-```http
-GET /api/admin/users/664a1234abcd5678ef901234
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**200 OK** — obiekt uzytkownika.
-**404** — uzytkownik nie znaleziony.
-
----
-
-### PUT /api/admin/users/:id/role
-
-Zmiana roli uzytkownika.
-
-```http
-PUT /api/admin/users/664a1234abcd5678ef901234/role
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Content-Type: application/json
-
-{
-  "role": "admin"
-}
-```
-
-**200 OK** — zaktualizowany uzytkownik.
-**400** — nieprawidlowa rola (dozwolone: `user`, `admin`).
-**404** — uzytkownik nie znaleziony.
-
----
-
-### DELETE /api/admin/users/:id
-
-Usuniecie uzytkownika i wszystkich jego ogloszen.
-
-```http
-DELETE /api/admin/users/664a1234abcd5678ef901234
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**200 OK** — `{ "message": "Uzytkownik i jego ogloszenia usuniete" }`
-**404** — uzytkownik nie znaleziony.
-
----
-
-## Kody odpowiedzi — podsumowanie
-
-| Kod | Znaczenie                          |
-|-----|------------------------------------|
-| 200 | Sukces                             |
-| 201 | Zasob utworzony                     |
-| 400 | Bledne dane wejsciowe / walidacja  |
-| 401 | Brak tokenu autoryzacji            |
-| 403 | Brak uprawnien / nieprawidlowy token |
-| 404 | Zasob nie znaleziony               |
-| 500 | Blad serwera                       |
-
----
-
-## Autoryzacja
-
-Chronione endpointy wymagaja naglowka:
-
-```
-Authorization: Bearer <token_z_logowania>
-```
-
-Token JWT wazny 7 dni. Uzyskiwany przez `POST /api/auth/login`.
+## Administracja
+
+Wszystkie endpointy wymagają JWT użytkownika z rolą `admin`.
+
+| Metoda | Endpoint | Opis |
+|--------|----------|------|
+| GET | `/api/admin/users` | Lista użytkowników |
+| GET | `/api/admin/users/:id` | Szczegóły użytkownika |
+| PUT | `/api/admin/users/:id/role` | Zmiana roli na `user` lub `admin` |
+| DELETE | `/api/admin/users/:id` | Usunięcie użytkownika, jego ogłoszeń i wiadomości |
+
+## Monitoring
+
+| Metoda | Endpoint | Dostęp | Opis |
+|--------|----------|--------|------|
+| GET | `/health` | publiczny | Status backendu i MongoDB |
+| GET | `/metrics` | `METRICS_TOKEN` lub JWT admina | Metryki Prometheus |
+| GET | `/api/monitoring/events.json` | `METRICS_TOKEN` lub JWT admina | Bufor ostatnich zdarzeń |
+| GET | `/api/monitoring/events.rss` | `METRICS_TOKEN` lub JWT admina | Zdarzenia w RSS |
+
+## Najważniejsze kody odpowiedzi
+
+| Kod | Znaczenie |
+|-----|-----------|
+| 200 | Operacja zakończona poprawnie |
+| 201 | Zasób utworzony |
+| 400 | Niepoprawne dane wejściowe |
+| 401 | Brak lub wygaśnięcie wymaganych danych uwierzytelniających |
+| 403 | Brak uprawnień albo niezweryfikowane konto |
+| 404 | Zasób nie istnieje |
+| 429 | Przekroczony limit prób logowania/rejestracji |
+| 500 | Nieobsłużony błąd serwera |

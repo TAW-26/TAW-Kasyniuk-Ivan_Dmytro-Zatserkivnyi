@@ -18,6 +18,8 @@
 |----------|--------|------|------|
 | `/metrics` | GET | Bearer token lub JWT admin | Metryki Prometheus |
 | `/health` | GET | Brak | Status aplikacji (publiczny) |
+| `/api/monitoring/events.json` | GET | Bearer token lub JWT admin | Ostatnie zdarzenia jako JSON |
+| `/api/monitoring/events.rss` | GET | Bearer token lub JWT admin | Ostatnie zdarzenia jako RSS |
 
 ## 3. Metryki
 

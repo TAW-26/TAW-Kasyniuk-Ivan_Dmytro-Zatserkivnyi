@@ -11,6 +11,8 @@
     "format": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --write \"**/*.js\" \"*.json\"",
     "format:check": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --check \"**/*.js\" \"*.json\"",
     "seed": "node seed.js",
+    "cleanup-test-data": "node scripts/cleanupTestData.js",
+    "serve-demo": "node scripts/serveProductionDemo.js",
     "clear-listings": "node scripts/clearListings.js",
     "loadtest": "node scripts/loadtest.js"
   },

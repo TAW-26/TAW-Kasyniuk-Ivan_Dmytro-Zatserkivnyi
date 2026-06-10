@@ -21,6 +21,10 @@ export class AuthService {
     return this.http.post<RegisterResponse>(`${this.baseUrl}/register`, payload);
   }
 
+  verifyEmail(token: string): Observable<{ message: string }> {
+    return this.http.get<{ message: string }>(`${this.baseUrl}/verify/${encodeURIComponent(token)}`);
+  }
+
   login(payload: { email: string; password: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, payload, { withCredentials: true }).pipe(
       tap((res) => {

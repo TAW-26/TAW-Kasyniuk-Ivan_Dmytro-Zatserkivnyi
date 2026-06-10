@@ -4,19 +4,19 @@ Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowan
 
 **Autorzy:** Ivan Kasyniuk (37696), Dmytro Zatserkivnyi (37751)
 
-## Funkcjonalności
+## Finalne funkcjonalności
 
-- Rejestracja i logowanie (JWT access token 15 min + refresh token 7 dni w httpOnly cookie)
-- Weryfikacja email przy rejestracji (auto-weryfikacja w trybie dev; w produkcji link na maila)
-- Ogłoszenia: dodawanie, edycja, usuwanie, wyszukiwanie, filtrowanie (kategoria, lokalizacja, cena), sortowanie i paginacja
-- Właściciel oznacza ogłoszenie jako sprzedane (`/mark-sold`)
-- Przycisk „Chcę kupić" otwiera czat z pre-wypełnioną wiadomością do sprzedawcy
-- Kategorie (CRUD — tylko administrator)
-- Ulubione ogłoszenia (synchronizowane z bazą danych dla zalogowanych; localStorage dla gości)
-- Czat 1-na-1 z licznikiem nieprzeczytanych i automatyczną odpowiedzią przy pierwszej wiadomości
-- Profil użytkownika z avatarem (PNG/JPG/WebP, max 2 MB)
-- Ustawienia konta: zmiana hasła (unieważnia wszystkie sesje), usunięcie konta, przełącznik motywu
-- Panel administratora: zarządzanie użytkownikami, rolami i ogłoszeniami
+- Publiczna strona główna, lista oraz szczegóły ogłoszeń dostępne bez logowania.
+- Rejestracja, logowanie i wylogowanie z JWT access tokenem (15 min) oraz refresh tokenem (7 dni) w httpOnly cookie.
+- Weryfikacja email: automatyczna w trybie development; w produkcji konto wymaga użycia linku generowanego w logach backendu.
+- Ogłoszenia: dodawanie, edycja, usuwanie, galeria do 5 zdjęć po 2 MB, wyszukiwanie, filtrowanie, sortowanie i paginacja.
+- Właściciel może oznaczyć ogłoszenie jako sprzedane.
+- Ulubione: synchronizacja z MongoDB dla zalogowanych oraz `localStorage` dla gości.
+- Czat 1-na-1, licznik nieprzeczytanych wiadomości, intencja „Chcę kupić” i automatyczna odpowiedź przy pierwszym kontakcie.
+- Profil użytkownika z telefonem i avatarem PNG/JPG/WebP do 5 MB.
+- Ustawienia konta: zmiana hasła, usunięcie konta i przełącznik motywu.
+- Funkcje administratora: monitoring i usuwanie dowolnych ogłoszeń w UI oraz zarządzanie użytkownikami, rolami i kategoriami przez chronione API.
+- Monitoring: `/health`, chronione `/metrics`, zdarzenia JSON/RSS, logi pino oraz dashboard Grafana.
 
 ## Bezpieczeństwo
 
@@ -37,7 +37,7 @@ Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowan
 
 - Node.js >= 18
 - npm >= 9
-- Angular CLI >= 17 → `npm install -g @angular/cli`
+- Angular CLI >= 19 → `npm install -g @angular/cli`
 - MongoDB (lokalnie lub Atlas)
 
 ### Zmienne środowiskowe (`backend/.env`)
@@ -48,15 +48,15 @@ Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowan
 | `JWT_SECRET`         | Sekret do podpisywania access tokenów                   | tak      |
 | `JWT_REFRESH_SECRET` | Sekret do podpisywania refresh tokenów                  | tak      |
 | `PORT`               | Port serwera (domyślnie `5000`)                         | nie      |
-| `FRONTEND_URL`       | Adres frontendu dla CORS (wymagany w produkcji)         | prod     |
+| `FRONTEND_URL`       | Adres frontendu dla CORS przy osobnym frontendzie        | nie      |
 | `NODE_ENV`           | `production` włącza weryfikację email i secure cookies  | nie      |
 | `METRICS_TOKEN`      | Token Bearer dla Prometheusa do scrape'owania `/metrics`| nie\*    |
 
 > \* Bez `METRICS_TOKEN` Prometheus nie może scrape'ować `/metrics` (zwraca `401`/`403`). Endpoint jest też dostępny dla zalogowanego administratora (JWT z rolą `admin`).
 
-> Serwer nie uruchomi się bez `MONGO_URI`, `JWT_SECRET` i `JWT_REFRESH_SECRET`. W trybie `production` wymagany jest też `FRONTEND_URL`.
+> Serwer nie uruchomi się bez `MONGO_URI`, `JWT_SECRET` i `JWT_REFRESH_SECRET`. Przy wdrożeniu frontendu i backendu pod jednym originem `FRONTEND_URL` jest opcjonalny; link weryfikacyjny jest wtedy budowany z hosta żądania.
 
-Wzór: `backend/env.example` (skopiuj do `backend/.env`).
+Wzór znajduje się w `backend/env.example`. Skopiuj go do `backend/.env`, uzupełnij wartości i nie commituj sekretów ani connection stringa MongoDB.
 
 ## Uruchomienie
 
@@ -88,6 +88,43 @@ npx ng serve            # http://localhost:4200
 ```
 
 > Frontend korzysta z proxy (`proxy.conf.json`) — zapytania `/api/*` są przekierowywane do `http://localhost:5000`. Nie ma potrzeby ręcznej konfiguracji CORS w przeglądarce.
+
+## Demo
+
+**Publiczne demo:** [https://accessibility-agenda-frank-organizational.trycloudflare.com](https://accessibility-agenda-frank-organizational.trycloudflare.com)
+
+> Status sprawdzony 11 czerwca 2026: strona, `/health` i `/api/listings` są dostępne przez HTTPS. Jest to tymczasowy Cloudflare Quick Tunnel, który działa tylko, gdy komputer autorów oraz procesy aplikacji i `cloudflared` są uruchomione.
+
+## Uruchomienie produkcyjne
+
+Pełna instrukcja znajduje się w [`docs/production.md`](docs/production.md).
+
+Repozytorium zawiera także `render.yaml`, który przygotowuje jeden Render web-service obsługujący API i production frontend pod tym samym adresem.
+
+Najważniejsze kroki:
+
+1. Ustaw `NODE_ENV=production`, bezpieczne sekrety, `MONGO_URI` oraz dokładny publiczny `FRONTEND_URL`.
+2. Zbuduj frontend poleceniem `npm run build -- --configuration production`.
+3. Uruchom backend poleceniem `npm start`.
+4. Udostępnij pliki z `frontend/dist/frontend/browser` przez serwer statyczny.
+5. Skonfiguruj HTTPS, fallback SPA do `index.html` oraz reverse proxy `/api`, `/health` i `/metrics` do backendu.
+
+Do lokalnej walidacji konfiguracji produkcyjnej można użyć Angular dev servera z production buildem:
+
+```powershell
+# terminal 1
+cd backend
+$env:NODE_ENV="production"
+$env:FRONTEND_URL="http://localhost:4200"
+npm start
+
+# terminal 2
+cd frontend
+npm run build -- --configuration production
+npm start -- --configuration production
+```
+
+Ta metoda sprawdza produkcyjny build i zachowanie backendu, ale nie zastępuje wdrożenia z HTTPS i reverse proxy.
 
 ## Testy
 
@@ -123,11 +160,12 @@ Tests:       7 passed, 7 total
 
 ### Frontend
 
-Frontend ma **9 testów komponentów Angular** w plikach:
+Frontend ma **10 testów komponentów Angular** w plikach:
 
 - `frontend/src/app/pages/login/login.component.spec.ts`,
 - `frontend/src/app/pages/register/register.component.spec.ts`,
 - `frontend/src/app/pages/add-ad/add-ad.component.spec.ts`,
+- `frontend/src/app/pages/verify-email/verify-email.component.spec.ts`,
 - `frontend/src/app/shared/components/ad-card/ad-card.component.spec.ts`.
 
 Zakres testów:
@@ -141,6 +179,7 @@ Zakres testów:
 - poprawne dane tworzą ogłoszenie,
 - karta ogłoszenia przechodzi do szczegółów,
 - przycisk ulubionych nie otwiera szczegółów ogłoszenia.
+- poprawny token weryfikacyjny aktywuje konto i pokazuje wynik użytkownikowi.
 
 Uruchomienie:
 
@@ -152,8 +191,8 @@ npm test
 Oczekiwany wynik:
 
 ```text
-Test Suites: 4 passed, 4 total
-Tests:       9 passed, 9 total
+Test Suites: 5 passed, 5 total
+Tests:       10 passed, 10 total
 ```
 
 Pliki `*.spec.ts` są wykluczone z buildu aplikacji w `frontend/tsconfig.app.json`, dlatego `npx ng serve` uruchamia aplikację, a `npm test` uruchamia testy.
@@ -231,7 +270,7 @@ Bez nagłówka — `401`. Z tokenem zwykłego użytkownika — `403`.
 
 | Warstwa      | Technologie                                                              |
 |--------------|--------------------------------------------------------------------------|
-| Frontend     | Angular 17 (standalone, signals, OnPush), TypeScript, Angular Material   |
+| Frontend     | Angular 19 (standalone, signals, OnPush), TypeScript, Angular Material   |
 | Backend      | Node.js, Express 5, JWT, Mongoose, bcrypt, cookie-parser, express-rate-limit |
 | Baza danych  | MongoDB (Atlas lub lokalnie)                                             |
 | Testy        | Jest, Supertest, mongodb-memory-server, jest-preset-angular              |
@@ -274,7 +313,8 @@ backend/
 │   ├── listings.js              # endpointy ogłoszeń
 │   ├── categories.js            # endpointy kategorii
 │   ├── messages.js              # endpointy czatu
-│   └── admin.js                 # endpointy panelu admina
+│   ├── admin.js                 # endpointy administracyjne
+│   └── monitoring.js            # chronione zdarzenia JSON/RSS
 ├── seed.js                      # skrypt inicjalizujący bazę danych
 ├── server.js                    # start serwera, walidacja env, połączenie z bazą
 ├── utils/
@@ -292,7 +332,8 @@ frontend/src/app/
 │   └── services/                        # auth, listing, messages, favorites, ...
 ├── layout/                      # main-layout z menu i nagłówkiem
 ├── pages/                       # ads, ad-detail, add-ad, favorites, home,
-│                                # login, messages, profile, register, settings
+│                                # login, messages, profile, register, settings,
+│                                # verify-email
 └── shared/                      # komponenty współdzielone (ad-card, stats-mini, ...)
 
 frontend/
@@ -394,8 +435,32 @@ Komenda `npm run seed` tworzy:
 
 Skrypt jest idempotentny — nie duplikuje danych przy ponownym uruchomieniu.
 
+## Czyszczenie danych testowych
+
+Skrypt usuwa rozpoznane konta i ogłoszenia utworzone przez testy automatyczne, E2E oraz seed:
+
+```bash
+cd backend
+npm run cleanup-test-data
+```
+
+Przed wykonaniem skryptu sprawdź, czy `MONGO_URI` wskazuje właściwą bazę. Operacja usuwa dane z bazy wskazanej przez tę zmienną.
+
+## Znane ograniczenia
+
+- Publiczne demo korzysta z tymczasowego Cloudflare Quick Tunnel bez gwarancji dostępności; projekt nie ma stałego hostingu ani domeny.
+- Produkcyjna weryfikacja email generuje link w logach backendu; zewnętrzny dostawca poczty nie jest skonfigurowany.
+- Zdjęcia i avatary są przechowywane jako data URL w MongoDB, a nie w zewnętrznym object storage.
+- Frontend używa relatywnego `/api`; wdrożenie wymaga reverse proxy albo zmiany konfiguracji adresu API.
+- Secure refresh cookie w trybie produkcyjnym wymaga HTTPS.
+- Repozytorium nie zawiera gotowej konfiguracji dla konkretnego hostingu, reverse proxy ani automatycznego CI/CD.
+- Automatyczne testy obejmują krytyczne scenariusze, ale nie pokrywają wszystkich funkcji panelu administratora, czatu i wdrożenia infrastruktury.
+
 ## Dokumentacja
 
 - [Diagram ERD](docs/ERD_DIAGRAM.png)
 - [Diagram Use Case](docs/Use_Case.png)
+- [Instrukcja produkcyjna](docs/production.md)
+- [Dokumentacja API](docs/api.md)
+- [Dokumentacja monitoringu](docs/monitoring.md)
 - [Kolekcja Postman](docs/ListApp.postman_collection.json)

@@ -52,7 +52,8 @@ exports.register = async (req, res, next) => {
     });
 
     if (!IS_DEV) {
-      const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/verify-email?token=${verificationToken}`;
+      const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+      const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
       console.log(`[VERIFY EMAIL] ${email} → ${verifyUrl}`);
     }
 

@@ -18,11 +18,6 @@ if (!process.env.MONGO_URI) {
   process.exit(1);
 }
 
-if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
-  console.error('FATAL: FRONTEND_URL is required in production');
-  process.exit(1);
-}
-
 connectDB();
 
 const app = require('./app');

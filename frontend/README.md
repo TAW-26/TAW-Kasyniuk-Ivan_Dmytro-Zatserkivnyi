@@ -1,90 +1,84 @@
-# LokalneOgłoszenia — Frontend (Angular 17)
+# Bazarek — frontend Angular 19
 
-Frontend aplikacji ogłoszeniowej zintegrowany z backendem REST (Node/Express + MongoDB).
+Frontend aplikacji ogłoszeń lokalnych. Korzysta ze standalone components, lazy loadingu, signals, strategii `OnPush` oraz Angular Material.
+
+## Finalne funkcjonalności
+
+- publiczna strona główna, lista i szczegóły ogłoszeń,
+- rejestracja, logowanie, wylogowanie i ekran weryfikacji email,
+- automatyczne odświeżanie access tokenu,
+- wyszukiwanie, filtrowanie, sortowanie i paginacja ogłoszeń,
+- dodawanie, edycja, usuwanie oraz oznaczanie ogłoszeń jako sprzedane,
+- galeria zdjęć,
+- ulubione dla gości i zalogowanych użytkowników,
+- profil, ustawienia konta i motyw ciemny,
+- czat oraz licznik nieprzeczytanych wiadomości,
+- funkcje administracyjne dostępne zgodnie z rolą użytkownika.
 
 ## Wymagania
 
-- Node.js >= 18
-- npm >= 9
-- Działający backend na `http://localhost:5000` (zob. `../backend`)
+- Node.js >= 18,
+- npm >= 9,
+- działający backend na `http://localhost:5000`.
 
-## Uruchomienie
+## Uruchomienie developerskie
 
 ```bash
 cd frontend
 npm install
-npm start          # http://localhost:4200
+npm start
 ```
 
-Frontend automatycznie łączy się z `http://localhost:5000/api`. Adres można zmienić
-w pliku `src/environments/environment.ts`.
+Frontend jest dostępny pod `http://localhost:4200`. Plik `proxy.conf.json` przekazuje `/api` oraz `/health` do backendu na porcie `5000`.
 
-## Struktura
+## Build produkcyjny
 
-```
-src/
-├── app/
-│   ├── app.component.ts          # root + toasty
-│   ├── app.config.ts             # provider'y (router, http, interceptor)
-│   ├── app.routes.ts             # routing (lazy-loaded standalone components)
-│   ├── core/
-│   │   ├── guards/auth.guard.ts          # authGuard, guestGuard
-│   │   ├── interceptors/auth.interceptor.ts # JWT + 401 → /login
-│   │   ├── models/                       # User, Listing, Category
-│   │   └── services/                     # auth, listing, category, favorites, images, notifications
-│   ├── layout/
-│   │   └── main-layout.component.ts      # sidebar + header
-│   ├── pages/
-│   │   ├── login/login.component.ts
-│   │   ├── register/register.component.ts
-│   │   ├── ads/ads.component.ts          # lista ogłoszeń + filtry
-│   │   ├── ad-detail/ad-detail.component.ts
-│   │   ├── favorites/favorites.component.ts
-│   │   ├── add-ad/add-ad.component.ts
-│   │   ├── profile/profile.component.ts  # mój profil + moje ogłoszenia
-│   │   └── settings/settings.component.ts # zakładki: Konto / Powiadomienia / Prywatność
-│   └── shared/components/
-│       ├── ad-card/                      # karta ogłoszenia
-│       └── stats-mini/                   # górne statystyki
-├── environments/environment.ts
-├── main.ts
-├── index.html
-└── styles.css                            # globalne style (zachowana paleta z makiety HTML)
+```bash
+cd frontend
+npm install
+npm run build -- --configuration production
 ```
 
-## Mapowanie funkcji frontendu na backend
+Gotowe pliki znajdują się w `dist/frontend/browser`. W docelowym wdrożeniu katalog należy udostępnić przez serwer statyczny z fallbackiem SPA do `index.html` oraz reverse proxy `/api` do backendu.
 
-| UI                       | API                                          |
-|--------------------------|----------------------------------------------|
-| Login                    | `POST /api/auth/login`                       |
-| Rejestracja              | `POST /api/auth/register`                    |
-| Lista ogłoszeń + filtry  | `GET /api/listings?search&category&sort`     |
-| Szczegóły ogłoszenia     | `GET /api/listings/:id`                      |
-| Dodanie ogłoszenia       | `POST /api/listings` (JWT)                   |
-| Usunięcie ogłoszenia     | `DELETE /api/listings/:id` (JWT)             |
-| Moje ogłoszenia (Profil) | `GET /api/listings/user/my` (JWT)            |
-| Kategorie (formularz)    | `GET /api/categories`                        |
-
-Dodatkowo:
-- **Ulubione** — przechowywane w `localStorage` (klucz `favorites`).
-- **Zdjęcia** — backend nie obsługuje uploadu; obrazki są zapisywane lokalnie w `localStorage` (klucz `listing_images`).
+Pełna instrukcja: [`../docs/production.md`](../docs/production.md).
 
 ## Trasy
 
-| Ścieżka       | Komponent              | Dostęp           |
-|---------------|------------------------|------------------|
-| `/login`      | LoginComponent         | tylko niezalogowani |
-| `/register`   | RegisterComponent      | tylko niezalogowani |
-| `/ads`        | AdsComponent           | JWT              |
-| `/ads/:id`    | AdDetailComponent      | JWT              |
-| `/favorites`  | FavoritesComponent     | JWT              |
-| `/add-ad`     | AddAdComponent         | JWT              |
-| `/profile`    | ProfileComponent       | JWT              |
-| `/settings`   | SettingsComponent      | JWT              |
+| Ścieżka | Dostęp | Opis |
+|---------|--------|------|
+| `/` | publiczny | Strona główna i lista ogłoszeń |
+| `/ads/:id` | publiczny | Szczegóły ogłoszenia |
+| `/login` | gość | Logowanie |
+| `/register` | gość | Rejestracja |
+| `/verify-email` | publiczny | Weryfikacja tokenu email |
+| `/ads` | JWT | Lista ogłoszeń w panelu |
+| `/favorites` | JWT | Ulubione |
+| `/add-ad` | JWT | Dodawanie ogłoszenia |
+| `/ads/:id/edit` | JWT | Edycja własnego ogłoszenia |
+| `/profile` | JWT | Profil i własne ogłoszenia |
+| `/settings` | JWT | Ustawienia konta |
+| `/messages` | JWT | Wiadomości |
 
-## Konto testowe (z seed.js)
+## Dane i API
 
+- Frontend używa relatywnego adresu API `/api`.
+- Ulubione zalogowanych są synchronizowane z backendem; ulubione gości są zapisane w `localStorage`.
+- Zdjęcia są konwertowane do data URL i zapisywane wraz z ogłoszeniem w MongoDB.
+- Motyw jest zapisywany lokalnie w przeglądarce.
+
+## Testy i jakość
+
+```bash
+npm test
+npm run lint
+npm run build -- --configuration production
 ```
-email:    admin@listapp.pl
-hasło:    admin123
-```
+
+Aktualny zestaw zawiera 10 testów komponentów w 5 plikach `*.spec.ts`.
+
+## Znane ograniczenia
+
+- Brak osobnego production environment z innym adresem API; publiczne wdrożenie wymaga reverse proxy albo zmiany konfiguracji.
+- Zdjęcia są przechowywane jako data URL, bez object storage i automatycznej optymalizacji.
+- `ng serve --configuration production` służy tylko do lokalnej walidacji i nie zastępuje serwera statycznego z HTTPS.
