@@ -4,11 +4,16 @@
 
 Aktualny adres:
 
-- [https://accessibility-agenda-frank-organizational.trycloudflare.com](https://accessibility-agenda-frank-organizational.trycloudflare.com)
+- [https://bazarek-taw.onrender.com](https://bazarek-taw.onrender.com)
 
-Status sprawdzony 11 czerwca 2026: strona, `/health` i `/api/listings` są dostępne przez HTTPS.
+Status sprawdzony 11 czerwca 2026:
 
-Adres `trycloudflare.com` jest tymczasowym Cloudflare Quick Tunnel. Działa wyłącznie, gdy komputer autorów, backend, production demo server i `cloudflared` są uruchomione. Po ponownym utworzeniu Quick Tunnel adres może się zmienić.
+- frontend i routing SPA są dostępne przez HTTPS,
+- `/health` zwraca `status: ok` oraz `db: connected`,
+- `/api/listings` zwraca aktualne ogłoszenia,
+- wdrożenie Render ma status `Live`.
+
+Demo działa jako jeden bezpłatny Render web-service wdrażany automatycznie z gałęzi `main`.
 
 ## Wymagane zmienne backendu
 
@@ -116,6 +121,8 @@ Plik `render.yaml` definiuje jeden web-service, który buduje Angular frontend, 
 
 Nie wpisuj sekretów do `render.yaml`, README ani repozytorium.
 
+Aktualny adres wdrożenia: [https://bazarek-taw.onrender.com](https://bazarek-taw.onrender.com).
+
 ## Tymczasowe demo przez Cloudflare Quick Tunnel
 
 Po wykonaniu production buildu uruchom production demo server:
@@ -162,8 +169,8 @@ Skrypt usuwa tylko rekordy rozpoznawane przez filtry w `backend/scripts/cleanupT
 
 ## Znane ograniczenia produkcyjne
 
-- Demo korzysta z Cloudflare Quick Tunnel bez gwarancji dostępności; brak stałego hostingu i domeny.
+- Bezpłatna instancja Render usypia przy braku aktywności; pierwsze żądanie po przerwie może trwać około 50 sekund lub dłużej.
 - Brak zewnętrznego dostawcy email; link weryfikacyjny jest zapisywany w logach backendu.
-- Brak object storage dla zdjęć i avatarów.
-- Brak gotowej konfiguracji reverse proxy, automatycznego HTTPS i CI/CD.
+- Zdjęcia i avatary są przechowywane jako data URL w MongoDB, bez object storage i automatycznej optymalizacji; odpowiedź listy ogłoszeń może być duża i wolna.
+- Własna domena nie jest skonfigurowana; demo korzysta z domeny `onrender.com`.
 - Monitoring Prometheus/Grafana wymaga osobnego uruchomienia i zabezpieczenia.
