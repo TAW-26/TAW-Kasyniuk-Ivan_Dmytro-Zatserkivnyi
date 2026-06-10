@@ -53,6 +53,14 @@ describe('AdCardComponent', () => {
     fixture = TestBed.createComponent(AdCardComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('ad', listing);
+    fixture.detectChanges();
+  });
+
+  test('renders listing details', () => {
+    expect(fixture.nativeElement.querySelector('.listing-card')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.ad-card')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Telefon');
+    expect(fixture.nativeElement.textContent).toContain('Warszawa');
   });
 
   test('navigates to listing details when card is opened', () => {

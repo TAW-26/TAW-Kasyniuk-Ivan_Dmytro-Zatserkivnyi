@@ -45,14 +45,14 @@ import { ListingService } from '../../../core/services/listing.service';
         letter-spacing: 0.05em;
         text-transform: uppercase;
       }
-      :host-context(.is-new) .ad-card,
-      .ad-card.is-new {
+      :host-context(.is-new) .listing-card,
+      .listing-card.is-new {
         border-color: var(--primary);
         box-shadow:
           0 0 0 1px var(--primary),
           var(--shadow-sm);
       }
-      .ad-card.is-new:hover {
+      .listing-card.is-new:hover {
         box-shadow:
           0 0 0 2px var(--primary),
           var(--shadow-md);
@@ -72,7 +72,7 @@ import { ListingService } from '../../../core/services/listing.service';
     `,
   ],
   template: `
-    <div class="ad-card" [class.is-new]="isNew()" (click)="open()">
+    <div class="listing-card" [class.is-new]="isNew()" (click)="open()">
       <div class="ad-image">
         @if (firstImage()) {
           <img [src]="firstImage()" [alt]="ad().title" />
