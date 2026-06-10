@@ -3,7 +3,7 @@ services:
     name: bazarek-taw
     runtime: node
     plan: free
-    buildCommand: npm ci --prefix backend && npm ci --prefix frontend && npm run build --prefix frontend -- --configuration production
+    buildCommand: npm ci --prefix backend && npm ci --prefix frontend --include=dev && npm run build --prefix frontend -- --configuration production
     startCommand: npm start --prefix backend
     healthCheckPath: /health
     envVars:
