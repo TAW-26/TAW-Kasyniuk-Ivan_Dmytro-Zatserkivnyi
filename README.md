@@ -91,9 +91,9 @@ npx ng serve            # http://localhost:4200
 
 ## Demo
 
-**Publiczne demo:** [https://accessibility-agenda-frank-organizational.trycloudflare.com](https://accessibility-agenda-frank-organizational.trycloudflare.com)
+**Publiczne demo:** [https://bazarek-taw.onrender.com](https://bazarek-taw.onrender.com)
 
-> Status sprawdzony 11 czerwca 2026: strona, `/health` i `/api/listings` są dostępne przez HTTPS. Jest to tymczasowy Cloudflare Quick Tunnel, który działa tylko, gdy komputer autorów oraz procesy aplikacji i `cloudflared` są uruchomione.
+> Status sprawdzony 11 czerwca 2026: frontend, routing SPA, `/health` i `/api/listings` są dostępne przez HTTPS, a MongoDB ma status `connected`. Demo działa jako jeden Render web-service wdrażany automatycznie z gałęzi `main`.
 
 ## Uruchomienie produkcyjne
 
@@ -103,7 +103,7 @@ Repozytorium zawiera także `render.yaml`, który przygotowuje jeden Render web-
 
 Najważniejsze kroki:
 
-1. Ustaw `NODE_ENV=production`, bezpieczne sekrety, `MONGO_URI` oraz dokładny publiczny `FRONTEND_URL`.
+1. Ustaw `NODE_ENV=production`, bezpieczne sekrety i `MONGO_URI`. `FRONTEND_URL` ustaw tylko przy osobnych originach frontendu i backendu.
 2. Zbuduj frontend poleceniem `npm run build -- --configuration production`.
 3. Uruchom backend poleceniem `npm start`.
 4. Udostępnij pliki z `frontend/dist/frontend/browser` przez serwer statyczny.
@@ -160,7 +160,7 @@ Tests:       7 passed, 7 total
 
 ### Frontend
 
-Frontend ma **10 testów komponentów Angular** w plikach:
+Frontend ma **11 testów komponentów Angular** w plikach:
 
 - `frontend/src/app/pages/login/login.component.spec.ts`,
 - `frontend/src/app/pages/register/register.component.spec.ts`,
@@ -448,12 +448,12 @@ Przed wykonaniem skryptu sprawdź, czy `MONGO_URI` wskazuje właściwą bazę. O
 
 ## Znane ograniczenia
 
-- Publiczne demo korzysta z tymczasowego Cloudflare Quick Tunnel bez gwarancji dostępności; projekt nie ma stałego hostingu ani domeny.
+- Publiczne demo działa na bezpłatnej instancji Render, która usypia przy braku aktywności; pierwsze żądanie po przerwie może trwać około 50 sekund lub dłużej.
 - Produkcyjna weryfikacja email generuje link w logach backendu; zewnętrzny dostawca poczty nie jest skonfigurowany.
-- Zdjęcia i avatary są przechowywane jako data URL w MongoDB, a nie w zewnętrznym object storage.
-- Frontend używa relatywnego `/api`; wdrożenie wymaga reverse proxy albo zmiany konfiguracji adresu API.
+- Zdjęcia i avatary są przechowywane jako data URL w MongoDB, bez object storage i automatycznej optymalizacji; odpowiedź listy ogłoszeń może być duża i wolna.
+- Frontend używa relatywnego `/api`; osobne wdrożenie frontendu wymaga reverse proxy albo zmiany konfiguracji adresu API.
 - Secure refresh cookie w trybie produkcyjnym wymaga HTTPS.
-- Repozytorium nie zawiera gotowej konfiguracji dla konkretnego hostingu, reverse proxy ani automatycznego CI/CD.
+- Demo korzysta z domeny `onrender.com`; własna domena nie jest skonfigurowana.
 - Automatyczne testy obejmują krytyczne scenariusze, ale nie pokrywają wszystkich funkcji panelu administratora, czatu i wdrożenia infrastruktury.
 
 ## Dokumentacja

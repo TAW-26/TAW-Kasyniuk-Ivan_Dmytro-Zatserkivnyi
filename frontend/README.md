@@ -75,10 +75,11 @@ npm run lint
 npm run build -- --configuration production
 ```
 
-Aktualny zestaw zawiera 10 testów komponentów w 5 plikach `*.spec.ts`.
+Aktualny zestaw zawiera 11 testów komponentów w 5 plikach `*.spec.ts`.
 
 ## Znane ograniczenia
 
-- Brak osobnego production environment z innym adresem API; publiczne wdrożenie wymaga reverse proxy albo zmiany konfiguracji.
+- Frontend używa relatywnego `/api`, dlatego osobne wdrożenie frontendu wymaga reverse proxy albo zmiany konfiguracji.
 - Zdjęcia są przechowywane jako data URL, bez object storage i automatycznej optymalizacji.
 - `ng serve --configuration production` służy tylko do lokalnej walidacji i nie zastępuje serwera statycznego z HTTPS.
+- Publiczne demo działa na bezpłatnej instancji Render, która może usypiać przy braku aktywności.
