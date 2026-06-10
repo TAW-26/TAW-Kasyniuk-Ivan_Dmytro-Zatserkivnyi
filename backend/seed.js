@@ -36,9 +36,13 @@ async function seed() {
         email: adminEmail,
         password: hashedPassword,
         role: 'admin',
+        isVerified: true,
       });
       console.log('Admin created:', admin.email);
     } else {
+      admin.role = 'admin';
+      admin.isVerified = true;
+      await admin.save();
       console.log('Admin already exists:', admin.email);
     }
 

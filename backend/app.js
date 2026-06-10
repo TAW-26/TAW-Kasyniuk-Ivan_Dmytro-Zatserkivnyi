@@ -2,8 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 app.use(
   cors({
@@ -58,9 +64,22 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 
-app.get('/', (req, res) => {
-  res.send('API dziala');
-});
+const frontendDir = path.resolve(__dirname, '../frontend/dist/frontend/browser');
+const frontendIndex = path.join(frontendDir, 'index.html');
+
+if (process.env.NODE_ENV === 'production' && fs.existsSync(frontendIndex)) {
+  app.use(express.static(frontendDir));
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api/') && req.path !== '/metrics' && req.path !== '/health') {
+      return res.sendFile(frontendIndex);
+    }
+    next();
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.send('API dziala');
+  });
+}
 
 const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);
