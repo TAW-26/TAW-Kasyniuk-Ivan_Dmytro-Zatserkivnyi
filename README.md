@@ -177,6 +177,7 @@ Zakres testów:
 - rejestracja pokazuje stan weryfikacji email,
 - formularz ogłoszenia nie wysyła pustych danych,
 - poprawne dane tworzą ogłoszenie,
+- karta ogłoszenia wyświetla szczegóły ogłoszenia,
 - karta ogłoszenia przechodzi do szczegółów,
 - przycisk ulubionych nie otwiera szczegółów ogłoszenia.
 - poprawny token weryfikacyjny aktywuje konto i pokazuje wynik użytkownikowi.
@@ -192,14 +193,14 @@ Oczekiwany wynik:
 
 ```text
 Test Suites: 5 passed, 5 total
-Tests:       10 passed, 10 total
+Tests:       11 passed, 11 total
 ```
 
 Pliki `*.spec.ts` są wykluczone z buildu aplikacji w `frontend/tsconfig.app.json`, dlatego `npx ng serve` uruchamia aplikację, a `npm test` uruchamia testy.
 
 ## Monitoring (Prometheus + Grafana + pino logs, bez Dockera)
 
-> **Pełna dokumentacja monitoringu:** [`docs/monitoring.md`](docs/monitoring.md) — opis całego stosu, audit log, healthcheck, integracja z UptimeRobotem, smoke-testy, alerty.
+> **Pełna dokumentacja monitoringu:** [`docs/monitoring.md`](docs/monitoring.md) — opis całego stosu, audit log, healthcheck, konfiguracja Prometheus/Grafana, monitorowanie czasu odpowiedzi, testy stabilności pod obciążeniem (`loadtest`), integracja z UptimeRobotem, smoke-testy, alerty.
 
 Backend udostępnia metryki w formacie Prometheusa pod adresem `GET /metrics`.
 Endpoint jest **chroniony**:
