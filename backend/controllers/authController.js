@@ -183,6 +183,77 @@ exports.verifyEmail = async (req, res, next) => {
   }
 };
 
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email jest wymagany' });
+
+    const user = await User.findOne({ email });
+    // Zawsze ta sama odpowiedź, aby nie ujawniać istnienia konta.
+    const genericResponse = {
+      message: 'Jeśli konto istnieje, link do resetu hasła został wysłany.',
+    };
+
+    if (!user) return res.json(genericResponse);
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = hashToken(resetToken);
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 godzina
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+    console.log(`[RESET PASSWORD] ${email} → ${resetUrl}`);
+
+    logger.info({ event: 'auth.password.reset_requested', userId: user._id.toString() }, 'Password reset requested');
+    events.push(
+      'auth.password.reset_requested',
+      { userId: user._id.toString(), email: user.email },
+      `Prośba o reset hasła: ${user.email}`,
+    );
+    res.json(genericResponse);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token i nowe hasło są wymagane' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Nowe hasło musi mieć min. 6 znaków' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: hashToken(token),
+      resetPasswordExpires: { $gt: new Date() },
+    }).select('+resetPasswordToken +resetPasswordExpires');
+    if (!user) {
+      return res.status(400).json({ message: 'Link do resetu hasła jest nieprawidłowy lub wygasł' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    user.refreshToken = undefined; // unieważnij wszystkie sesje
+    await user.save();
+
+    logger.info({ event: 'auth.password.reset', userId: user._id.toString() }, 'Password reset completed');
+    events.push(
+      'auth.password.reset',
+      { userId: user._id.toString(), email: user.email },
+      `Hasło zresetowane: ${user.email}`,
+    );
+    res.clearCookie('refreshToken', { ...REFRESH_COOKIE, maxAge: 0 });
+    res.json({ message: 'Hasło zostało zmienione. Możesz się teraz zalogować.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.me = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -277,6 +348,35 @@ exports.clearFavorites = async (req, res, next) => {
   try {
     await User.findByIdAndUpdate(req.user.id, { $set: { favorites: [] } });
     res.json({ favorites: [] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.mergeFavorites = async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ message: 'Lista ulubionych jest wymagana' });
+    }
+
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    let user;
+    if (validIds.length > 0) {
+      // Dodajemy tylko ulubione wskazujące na istniejące ogłoszenia.
+      const existing = await Listing.find({ _id: { $in: validIds } }).select('_id');
+      const existingIds = existing.map((listing) => listing._id);
+      user = await User.findByIdAndUpdate(
+        req.user.id,
+        { $addToSet: { favorites: { $each: existingIds } } },
+        { new: true },
+      ).select('favorites');
+    } else {
+      user = await User.findById(req.user.id).select('favorites');
+    }
+
+    if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
+    res.json({ favorites: (user.favorites ?? []).map(String) });
   } catch (err) {
     next(err);
   }

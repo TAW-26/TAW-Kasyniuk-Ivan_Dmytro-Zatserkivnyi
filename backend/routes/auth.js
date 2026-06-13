@@ -7,12 +7,15 @@ const {
   refresh,
   logout,
   verifyEmail,
+  forgotPassword,
+  resetPassword,
   me,
   updateMe,
   changePassword,
   deleteMe,
   toggleFavorite,
   clearFavorites,
+  mergeFavorites,
 } = require('../controllers/authController');
 
 const authLimiter = rateLimit({
@@ -29,6 +32,8 @@ router.post('/login', authLimiter, login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/verify/:token', verifyEmail);
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/reset-password', authLimiter, resetPassword);
 
 router.get('/me', auth, me);
 router.put('/me', auth, updateMe);
@@ -36,6 +41,7 @@ router.put('/me/password', auth, changePassword);
 router.delete('/me', auth, deleteMe);
 
 router.post('/favorites/toggle/:id', auth, toggleFavorite);
+router.post('/favorites/merge', auth, mergeFavorites);
 router.delete('/favorites', auth, clearFavorites);
 
 module.exports = router;

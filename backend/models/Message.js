@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema(
     listing_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Listing', default: null },
     content: { type: String, required: true, trim: true },
     read_at: { type: Date, default: null },
+    isAutoReply: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

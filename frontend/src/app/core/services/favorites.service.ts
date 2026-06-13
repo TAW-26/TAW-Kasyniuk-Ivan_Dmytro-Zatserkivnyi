@@ -83,6 +83,21 @@ export class FavoritesService {
     }
   }
 
+  // Po zalogowaniu scala ulubione gościa (localStorage) z kontem, potem czyści lokalne.
+  mergeGuestIntoAccount(): void {
+    if (!this.auth.isLoggedIn()) return;
+    const guest = this.loadLocal();
+    if (guest.length === 0) return;
+
+    this.http.post<{ favorites: string[] }>(`${this.baseUrl}/merge`, { ids: guest }).subscribe({
+      next: (res) => {
+        this.syncFromServer(res.favorites);
+        this.clearLocal();
+      },
+      error: () => {},
+    });
+  }
+
   private syncFromServer(favorites: string[]): void {
     this._favorites.set(favorites);
     this.auth.patchFavorites(favorites);
@@ -100,5 +115,9 @@ export class FavoritesService {
 
   private saveLocal(favorites: string[]): void {
     localStorage.setItem('favorites_guest', JSON.stringify(favorites));
+  }
+
+  private clearLocal(): void {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem('favorites_guest');
   }
 }

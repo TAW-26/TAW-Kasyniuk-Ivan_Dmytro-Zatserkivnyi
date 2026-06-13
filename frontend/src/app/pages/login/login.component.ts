@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
+import { FavoritesService } from '../../core/services/favorites.service';
 import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
@@ -130,6 +131,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </button>
         </form>
 
+        <div class="auth-footer"><a routerLink="/forgot-password">Nie pamiętasz hasła?</a></div>
         <div class="auth-footer">Nie masz konta? <a routerLink="/register">Zarejestruj się</a></div>
       </div>
     </div>
@@ -138,6 +140,7 @@ import { NotificationService } from '../../core/services/notification.service';
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly favorites = inject(FavoritesService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
 
@@ -166,6 +169,7 @@ export class LoginComponent {
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => {
         this.loading.set(false);
+        this.favorites.mergeGuestIntoAccount();
         this.notifications.show('Zalogowano pomyślnie');
         this.router.navigate(['/ads']);
       },

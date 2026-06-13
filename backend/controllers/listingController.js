@@ -4,6 +4,7 @@ const { canModifyListing } = require('../utils/acl');
 const logger = require('../utils/logger');
 const events = require('../utils/eventsBuffer');
 
+const POPULATE_USER_ANON = 'username';
 const POPULATE_USER_PUBLIC = 'username phone';
 const POPULATE_USER_OWNER = 'username email phone';
 const POPULATE_CATEGORY = 'name';
@@ -90,8 +91,10 @@ exports.getAll = async (req, res, next) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
+    // Telefon sprzedawcy widoczny tylko dla zalogowanych — chroni przed scrapingiem numerów.
+    const userSelect = req.user ? POPULATE_USER_PUBLIC : POPULATE_USER_ANON;
     let query = Listing.find(filter)
-      .populate('user_id', POPULATE_USER_PUBLIC)
+      .populate('user_id', userSelect)
       .populate('category_id', POPULATE_CATEGORY)
       .skip(skip)
       .limit(limitNum);
@@ -119,8 +122,9 @@ exports.getOne = async (req, res, next) => {
       return res.status(400).json({ message: 'Nieprawidłowy ID ogłoszenia' });
     }
 
+    const userSelect = req.user ? POPULATE_USER_PUBLIC : POPULATE_USER_ANON;
     const listing = await Listing.findById(req.params.id)
-      .populate('user_id', POPULATE_USER_PUBLIC)
+      .populate('user_id', userSelect)
       .populate('category_id', POPULATE_CATEGORY);
     if (!listing) return res.status(404).json({ message: 'Ogłoszenie nie znalezione' });
     res.json(listing);
@@ -284,6 +288,31 @@ exports.markAsSold = async (req, res, next) => {
       return res.status(400).json({ message: 'Ogłoszenie jest już oznaczone jako sprzedane' });
     }
     listing.status = 'sold';
+    await listing.save();
+    const populated = await Listing.findById(listing._id)
+      .populate('user_id', POPULATE_USER_OWNER)
+      .populate('category_id', POPULATE_CATEGORY);
+    res.json(populated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.markAsActive = async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Nieprawidłowy ID ogłoszenia' });
+    }
+
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ message: 'Ogłoszenie nie znalezione' });
+    if (listing.user_id.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Tylko właściciel może przywrócić ogłoszenie' });
+    }
+    if (listing.status === 'active') {
+      return res.status(400).json({ message: 'Ogłoszenie jest już aktywne' });
+    }
+    listing.status = 'active';
     await listing.save();
     const populated = await Listing.findById(listing._id)
       .populate('user_id', POPULATE_USER_OWNER)

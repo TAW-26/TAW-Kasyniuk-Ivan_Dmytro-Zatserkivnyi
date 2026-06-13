@@ -10,6 +10,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 interface HealthResponse {
   status: 'ok' | 'degraded' | string;
@@ -144,7 +145,7 @@ interface EventsResponse {
         padding: 0.75rem 1rem;
       }
       .health-card.health-ok {
-        border-left: 4px solid #16a34a;
+        border-left: 4px solid var(--success);
       }
       .health-card.health-bad {
         border-left: 4px solid var(--danger);
@@ -298,7 +299,7 @@ interface EventsResponse {
         background: var(--danger);
       }
       .event-row[data-evt='auth.login'] .event-tag {
-        background: #16a34a;
+        background: var(--success);
       }
       .event-msg {
         color: var(--text);
@@ -559,6 +560,7 @@ export class SettingsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
   private readonly http = inject(HttpClient);
+  private readonly theme = inject(ThemeService);
 
   protected currentPassword = '';
   protected newPassword = '';
@@ -573,7 +575,7 @@ export class SettingsComponent implements OnInit {
   protected privacyBlockUnknown = false;
   protected privacyTrustedOnly = false;
 
-  protected readonly darkMode = signal(localStorage.getItem('theme') === 'dark');
+  protected readonly darkMode = this.theme.darkMode;
 
   protected readonly health = signal<HealthResponse | null>(null);
   protected readonly healthLoading = signal(false);
@@ -644,13 +646,7 @@ export class SettingsComponent implements OnInit {
   }
 
   toggleTheme(): void {
-    this.darkMode.update((v) => !v);
-    localStorage.setItem('theme', this.darkMode() ? 'dark' : 'light');
-    if (this.darkMode()) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    this.theme.toggle();
   }
 
   changePassword(): void {

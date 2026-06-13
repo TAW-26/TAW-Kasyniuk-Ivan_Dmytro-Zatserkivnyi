@@ -60,6 +60,26 @@ import { NotificationService } from '../../core/services/notification.service';
       .hidden-input {
         display: none;
       }
+      .image-upload-area:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+      .upload-hint {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin: 0.4rem 0 0;
+      }
+      .image-preview .cover-badge {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 0.6rem;
+        font-weight: 600;
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+      }
     `,
   ],
   template: `
@@ -138,10 +158,19 @@ import { NotificationService } from '../../core/services/notification.service';
 
         <div class="form-group">
           <label>Zdjęcia</label>
-          <div class="image-upload-area" (click)="fileInput.click()">
+          <div
+            class="image-upload-area"
+            role="button"
+            tabindex="0"
+            aria-label="Dodaj zdjęcia"
+            (click)="fileInput.click()"
+            (keydown.enter)="fileInput.click()"
+            (keydown.space)="$event.preventDefault(); fileInput.click()"
+          >
             <mat-icon>add_photo_alternate</mat-icon>
             Kliknij, aby dodać zdjęcia
           </div>
+          <p class="upload-hint">Maks. {{ MAX_IMAGES }} zdjęć, do 2 MB każde. Pierwsze zdjęcie jest główne.</p>
           <input
             #fileInput
             type="file"
@@ -154,7 +183,12 @@ import { NotificationService } from '../../core/services/notification.service';
             @for (img of images(); track $index) {
               <div class="image-preview">
                 <img [src]="img" alt="Preview" />
-                <button type="button" class="remove-image" (click)="removeImage($index)">×</button>
+                @if ($index === 0) {
+                  <span class="cover-badge">Główne</span>
+                }
+                <button type="button" class="remove-image" aria-label="Usuń zdjęcie" (click)="removeImage($index)">
+                  ×
+                </button>
               </div>
             }
           </div>
@@ -182,6 +216,9 @@ export class AddAdComponent implements OnInit {
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
 
+  protected readonly MAX_IMAGES = 5;
+  private readonly MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
   protected readonly categories = signal<Category[]>([]);
   protected readonly loading = signal(false);
   protected readonly images = signal<string[]>([]);
@@ -190,7 +227,7 @@ export class AddAdComponent implements OnInit {
   protected readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required]],
     category_id: ['', [Validators.required]],
-    price: [0, [Validators.required, Validators.min(0)]],
+    price: [null as number | null, [Validators.required, Validators.min(0)]],
     location: ['', [Validators.required]],
     description: ['', [Validators.required]],
     status: ['active' as 'active' | 'inactive' | 'sold'],
@@ -214,10 +251,28 @@ export class AddAdComponent implements OnInit {
   async onFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files) return;
-    const files = Array.from(input.files);
-    const dataUrls = await Promise.all(files.map((f) => this.imagesService.fileToDataUrl(f)));
-    this.images.update((current) => [...current, ...dataUrls]);
+    const selected = Array.from(input.files);
     input.value = '';
+
+    const remaining = this.MAX_IMAGES - this.images().length;
+    if (remaining <= 0) {
+      this.notifications.show(`Możesz dodać maksymalnie ${this.MAX_IMAGES} zdjęć`);
+      return;
+    }
+
+    const withinSize = selected.filter((file) => file.size <= this.MAX_IMAGE_BYTES);
+    if (withinSize.length < selected.length) {
+      this.notifications.show('Pominięto zdjęcia większe niż 2 MB');
+    }
+
+    const accepted = withinSize.slice(0, remaining);
+    if (withinSize.length > remaining) {
+      this.notifications.show(`Dodano tylko ${remaining} z wybranych zdjęć (limit ${this.MAX_IMAGES})`);
+    }
+    if (accepted.length === 0) return;
+
+    const dataUrls = await Promise.all(accepted.map((file) => this.imagesService.fileToDataUrl(file)));
+    this.images.update((current) => [...current, ...dataUrls]);
   }
 
   removeImage(index: number): void {

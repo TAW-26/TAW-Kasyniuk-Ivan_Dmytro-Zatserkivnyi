@@ -222,6 +222,16 @@ import { NotificationService } from '../../core/services/notification.service';
         word-wrap: break-word;
       }
 
+      .auto-reply-tag {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        opacity: 0.7;
+        margin-bottom: 0.2rem;
+      }
+
       .message-bubble.mine {
         align-self: flex-end;
         background: var(--primary);
@@ -405,6 +415,9 @@ import { NotificationService } from '../../core/services/notification.service';
                     }
                   </div>
                   <div class="message-bubble" [class.mine]="isMine(msg)" [class.theirs]="!isMine(msg)">
+                    @if (msg.isAutoReply) {
+                      <span class="auto-reply-tag">Automatyczna odpowiedź</span>
+                    }
                     {{ msg.content }}
                   </div>
                 </div>

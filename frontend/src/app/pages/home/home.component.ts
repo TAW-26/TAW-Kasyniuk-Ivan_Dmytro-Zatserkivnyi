@@ -17,6 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { ListingService } from '../../core/services/listing.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ThemeService } from '../../core/services/theme.service';
 import { AdCardComponent } from '../../shared/components/ad-card/ad-card.component';
 
 @Component({
@@ -163,7 +164,7 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
       .section-label {
         font-size: 0.75rem;
         font-weight: 700;
-        color: var(--gray-400);
+        color: var(--gray-500);
         text-transform: uppercase;
         letter-spacing: 0.07em;
         margin-bottom: 0.875rem;
@@ -292,6 +293,7 @@ import { AdCardComponent } from '../../shared/components/ad-card/ad-card.compone
         <button
           mat-icon-button
           [matTooltip]="darkMode() ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'"
+          [attr.aria-label]="darkMode() ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'"
           (click)="toggleTheme()"
         >
           <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -447,11 +449,12 @@ export class HomeComponent implements OnInit {
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
+  private readonly theme = inject(ThemeService);
 
   protected readonly ads = signal<Listing[]>([]);
   protected readonly categories = signal<Category[]>([]);
   protected readonly loading = signal(true);
-  protected readonly darkMode = signal(localStorage.getItem('theme') === 'dark');
+  protected readonly darkMode = this.theme.darkMode;
   protected readonly activeCategory = signal('');
 
   protected readonly filtersForm = this.fb.nonNullable.group({
@@ -464,7 +467,6 @@ export class HomeComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.applyTheme();
     if (this.auth.isLoggedIn()) {
       this.router.navigate(['/ads']);
       return;
@@ -498,17 +500,7 @@ export class HomeComponent implements OnInit {
   }
 
   toggleTheme(): void {
-    this.darkMode.update((v) => !v);
-    localStorage.setItem('theme', this.darkMode() ? 'dark' : 'light');
-    this.applyTheme();
-  }
-
-  private applyTheme(): void {
-    if (this.darkMode()) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    this.theme.toggle();
   }
 
   private load(): void {

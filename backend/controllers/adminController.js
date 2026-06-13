@@ -34,6 +34,9 @@ exports.updateRole = async (req, res, next) => {
       return res.status(400).json({ message: 'Nieprawidłowy ID użytkownika' });
     }
 
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ message: 'Nie możesz zmienić własnej roli' });
+    }
     const { role } = req.body;
     if (!role || !['user', 'admin'].includes(role)) {
       return res.status(400).json({ message: "Rola musi być 'user' lub 'admin'" });
@@ -52,6 +55,9 @@ exports.deleteUser = async (req, res, next) => {
       return res.status(400).json({ message: 'Nieprawidłowy ID użytkownika' });
     }
 
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ message: 'Nie możesz usunąć własnego konta z panelu administratora' });
+    }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'Użytkownik nie znaleziony' });
     await Listing.deleteMany({ user_id: req.params.id });
