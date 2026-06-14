@@ -13,8 +13,6 @@ import { AuthService } from '../services/auth.service';
 let isRefreshing = false;
 const refreshSubject = new BehaviorSubject<string | null>(null);
 
-// Oznacza żądanie ponowione już po odświeżeniu tokenu, aby kolejne 401
-// nie uruchamiało następnego odświeżania (ochrona przed pętlą).
 const RETRIED = new HttpContextToken<boolean>(() => false);
 
 function withAuth(auth: AuthService, req: HttpRequest<unknown>, context?: HttpContext): HttpRequest<unknown> {

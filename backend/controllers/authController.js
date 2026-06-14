@@ -189,7 +189,6 @@ exports.forgotPassword = async (req, res, next) => {
     if (!email) return res.status(400).json({ message: 'Email jest wymagany' });
 
     const user = await User.findOne({ email });
-    // Zawsze ta sama odpowiedź, aby nie ujawniać istnienia konta.
     const genericResponse = {
       message: 'Jeśli konto istnieje, link do resetu hasła został wysłany.',
     };
@@ -363,7 +362,6 @@ exports.mergeFavorites = async (req, res, next) => {
     const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
     let user;
     if (validIds.length > 0) {
-      // Dodajemy tylko ulubione wskazujące na istniejące ogłoszenia.
       const existing = await Listing.find({ _id: { $in: validIds } }).select('_id');
       const existingIds = existing.map((listing) => listing._id);
       user = await User.findByIdAndUpdate(

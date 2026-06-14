@@ -12,8 +12,6 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
-// Nagłówki bezpieczeństwa. CSP dopuszcza Google Fonts oraz obrazy data:URL
-// (zdjęcia i avatary są przechowywane jako data URL), aby nie zepsuć frontendu.
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -31,7 +29,6 @@ app.use(
   }),
 );
 
-// Lista dozwolonych originów (po przecinku w FRONTEND_URL); brak Origin (np. curl) jest dozwolony.
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4200')
   .split(',')
   .map((o) => o.trim())
@@ -40,8 +37,6 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4200')
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Nie rzucamy błędu dla obcego origin (to powodowałoby 500 m.in. dla
-      // własnych modułów <script type="module">). Po prostu nie dodajemy nagłówków CORS.
       callback(null, !origin || allowedOrigins.includes(origin));
     },
     credentials: true,
