@@ -54,7 +54,13 @@ exports.send = async (req, res, next) => {
         try {
           const alreadyReplied = await Message.countDocuments({ from: to, to: senderId });
           if (alreadyReplied === 0) {
-            await Message.create({ from: to, to: senderId, listing_id: listing_id || null, content: replyText });
+            await Message.create({
+              from: to,
+              to: senderId,
+              listing_id: listing_id || null,
+              content: replyText,
+              isAutoReply: true,
+            });
           }
         } catch (err) {
           console.error('[AUTO-REPLY]', err.message);

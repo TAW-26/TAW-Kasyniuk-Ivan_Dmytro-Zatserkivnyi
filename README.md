@@ -15,6 +15,7 @@ Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowan
 - Czat 1-na-1, licznik nieprzeczytanych wiadomości, intencja „Chcę kupić” i automatyczna odpowiedź przy pierwszym kontakcie.
 - Profil użytkownika z telefonem i avatarem PNG/JPG/WebP do 5 MB.
 - Ustawienia konta: zmiana hasła, usunięcie konta i przełącznik motywu.
+- Reset zapomnianego hasła przez link (token ważny 1 h; w produkcji link generowany w logach backendu, jak weryfikacja email).
 - Funkcje administratora: monitoring i usuwanie dowolnych ogłoszeń w UI oraz zarządzanie użytkownikami, rolami i kategoriami przez chronione API.
 - Monitoring: `/health`, chronione `/metrics`, zdarzenia JSON/RSS, logi pino oraz dashboard Grafana.
 
@@ -29,6 +30,8 @@ Aplikacja webowa do publikowania i przeglądania ogłoszeń lokalnych z wbudowan
 | Rate limiting | Max 10 prób logowania / rejestracji na 15 min |
 | Email weryfikacja | Konto blokowane do potwierdzenia (produkcja) |
 | Email sprzedawcy ukryty | API nie zwraca emaila w publicznych endpointach |
+| Telefon tylko dla zalogowanych | Publiczne endpointy ogłoszeń nie zwracają telefonu anonimom (ochrona przed scrapingiem) |
+| Nagłówki bezpieczeństwa (helmet) | CSP, HSTS, X-Frame-Options, X-Content-Type-Options |
 | Walidacja zdjęć | Max 5 zdjęć, max 2 MB każde |
 | Oznaczanie jako sprzedane | Tylko właściciel (nie kupujący) |
 | Walidacja ObjectId | Endpointy z parametrem ID weryfikują format MongoDB ObjectId |
@@ -355,11 +358,14 @@ frontend/
 | POST   | `/api/auth/refresh`               | Wymiana refresh tokenu na nowy access token            | cookie    |
 | POST   | `/api/auth/logout`                | Wylogowanie (usuwa refresh token z bazy i cookie)      | cookie    |
 | GET    | `/api/auth/verify/:token`         | Weryfikacja adresu email                               | publiczny |
+| POST   | `/api/auth/forgot-password`       | Prośba o reset hasła (link generowany w logach)        | publiczny |
+| POST   | `/api/auth/reset-password`        | Ustawienie nowego hasła na podstawie tokenu z linku    | publiczny |
 | GET    | `/api/auth/me`                    | Profil zalogowanego użytkownika (z listą favorites)    | JWT       |
 | PUT    | `/api/auth/me`                    | Aktualizacja profilu (username, telefon, avatar)       | JWT       |
 | PUT    | `/api/auth/me/password`           | Zmiana hasła (unieważnia wszystkie sesje)              | JWT       |
 | DELETE | `/api/auth/me`                    | Usunięcie konta (wraz z ogłoszeniami i wiadomościami)  | JWT       |
 | POST   | `/api/auth/favorites/toggle/:id`  | Dodanie / usunięcie ogłoszenia z ulubionych            | JWT       |
+| POST   | `/api/auth/favorites/merge`       | Scalenie ulubionych gościa z kontem po zalogowaniu     | JWT       |
 | DELETE | `/api/auth/favorites`             | Wyczyszczenie wszystkich ulubionych                    | JWT       |
 
 ### Listings (Ogłoszenia)
@@ -371,6 +377,7 @@ frontend/
 | GET    | `/api/listings/user/my`         | Ogłoszenia zalogowanego użytkownika                       | JWT       |
 | POST   | `/api/listings`                 | Dodanie ogłoszenia (max 5 zdjęć, max 2 MB)               | JWT       |
 | POST   | `/api/listings/:id/mark-sold`   | Oznaczenie jako sprzedane (tylko właściciel)              | JWT       |
+| POST   | `/api/listings/:id/mark-active` | Przywrócenie sprzedanego jako aktywne (tylko właściciel) | JWT       |
 | PUT    | `/api/listings/:id`             | Edycja (tylko właściciel)                                 | JWT       |
 | DELETE | `/api/listings/:id`             | Usunięcie (właściciel **lub admin** — admin może usunąć dowolne ogłoszenie) | JWT |
 

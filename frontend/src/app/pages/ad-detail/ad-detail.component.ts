@@ -336,6 +336,11 @@ import { NotificationService } from '../../core/services/notification.service';
                   {{ marking() ? 'Zapisywanie...' : 'Oznacz jako sprzedane' }}
                 </button>
               }
+              @if (canMarkActive()) {
+                <button class="btn btn-outline" (click)="markAsActive()" [disabled]="marking()">
+                  {{ marking() ? 'Zapisywanie...' : 'Przywróć jako aktywne' }}
+                </button>
+              }
               @if (canBuyIntent()) {
                 <button class="btn btn-primary" (click)="wantToBuy()">Chcę kupić</button>
               }
@@ -440,6 +445,12 @@ export class AdDetailComponent implements OnInit {
     return this.isOwner() && ad.status !== 'sold';
   });
 
+  protected readonly canMarkActive = computed(() => {
+    const ad = this.listing();
+    if (!ad) return false;
+    return this.isOwner() && ad.status === 'sold';
+  });
+
   protected readonly canBuyIntent = computed(() => {
     const ad = this.listing();
     if (!ad) return false;
@@ -494,6 +505,24 @@ export class AdDetailComponent implements OnInit {
         this.marking.set(false);
         this.listing.set(updated);
         this.notifications.show('Ogłoszenie oznaczone jako sprzedane');
+      },
+      error: (err) => {
+        this.marking.set(false);
+        this.notifications.show(err.error?.message ?? 'Nie udało się zaktualizować ogłoszenia');
+      },
+    });
+  }
+
+  markAsActive(): void {
+    const ad = this.listing();
+    if (!ad) return;
+
+    this.marking.set(true);
+    this.listingService.markAsActive(ad._id).subscribe({
+      next: (updated) => {
+        this.marking.set(false);
+        this.listing.set(updated);
+        this.notifications.show('Ogłoszenie ponownie aktywne');
       },
       error: (err) => {
         this.marking.set(false);

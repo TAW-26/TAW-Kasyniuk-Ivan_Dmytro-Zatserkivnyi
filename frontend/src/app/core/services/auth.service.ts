@@ -25,6 +25,14 @@ export class AuthService {
     return this.http.get<{ message: string }>(`${this.baseUrl}/verify/${encodeURIComponent(token)}`);
   }
 
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/reset-password`, { token, newPassword });
+  }
+
   login(payload: { email: string; password: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, payload, { withCredentials: true }).pipe(
       tap((res) => {

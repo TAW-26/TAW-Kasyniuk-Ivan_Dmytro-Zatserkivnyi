@@ -7,6 +7,7 @@ export interface Message {
   listing_id: { _id: string; title: string } | string | null;
   content: string;
   read_at: string | null;
+  isAutoReply?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,13 +1,17 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../core/services/auth.service';
 import { FavoritesService } from '../core/services/favorites.service';
 import { MessagesService } from '../core/services/messages.service';
+import { ThemeService } from '../core/services/theme.service';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatButtonModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -166,16 +170,28 @@ import { MessagesService } from '../core/services/messages.service';
 
       .header-actions {
         display: flex;
-        gap: 1rem;
+        gap: 0.75rem;
         align-items: center;
+        margin-left: auto;
+      }
+
+      .nav-item mat-icon {
+        font-size: 1.25rem;
+        width: 1.25rem;
+        height: 1.25rem;
       }
 
       .mobile-menu-btn {
         display: none;
         background: none;
         border: none;
-        font-size: 1.5rem;
+        color: var(--text);
         cursor: pointer;
+        padding: 0;
+      }
+
+      .backdrop {
+        display: none;
       }
 
       @media (max-width: 768px) {
@@ -189,32 +205,49 @@ import { MessagesService } from '../core/services/messages.service';
           margin-left: 0;
         }
         .mobile-menu-btn {
+          display: inline-flex;
+          align-items: center;
+        }
+        .backdrop {
           display: block;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.45);
+          z-index: 99;
         }
       }
     `,
   ],
   template: `
+    @if (mobileOpen()) {
+      <div class="backdrop" (click)="closeMobileMenu()"></div>
+    }
     <div class="sidebar" [class.mobile-open]="mobileOpen()">
       <a class="logo" routerLink="/" (click)="closeMobileMenu()">Bazarek</a>
       <div class="nav-menu">
-        <a routerLink="/ads" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()"> Ogłoszenia </a>
+        <a routerLink="/ads" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+          <mat-icon>storefront</mat-icon> Ogłoszenia
+        </a>
         <a routerLink="/favorites" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
-          Ulubione
-          <span class="favorite-badge">{{ favorites.count() }}</span>
+          <mat-icon>favorite</mat-icon> Ulubione
+          @if (favorites.count() > 0) {
+            <span class="favorite-badge">{{ favorites.count() }}</span>
+          }
         </a>
         <a routerLink="/messages" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
-          Wiadomości
+          <mat-icon>chat_bubble</mat-icon> Wiadomości
           @if (messagesService.unreadCount() > 0) {
             <span class="favorite-badge">{{ messagesService.unreadCount() }}</span>
           }
         </a>
         <a routerLink="/add-ad" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
-          Dodaj ogłoszenie
+          <mat-icon>add_circle</mat-icon> Dodaj ogłoszenie
         </a>
-        <a routerLink="/profile" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()"> Profil </a>
+        <a routerLink="/profile" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+          <mat-icon>person</mat-icon> Profil
+        </a>
         <a routerLink="/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
-          Ustawienia
+          <mat-icon>settings</mat-icon> Ustawienia
         </a>
       </div>
       <a class="user-section" routerLink="/profile" (click)="closeMobileMenu()">
@@ -235,9 +268,18 @@ import { MessagesService } from '../core/services/messages.service';
 
     <div class="main-content">
       <div class="header">
-        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">Menu</button>
-        <span></span>
+        <button class="mobile-menu-btn" aria-label="Otwórz menu" (click)="toggleMobileMenu()">
+          <mat-icon>menu</mat-icon>
+        </button>
         <div class="header-actions">
+          <button
+            mat-icon-button
+            [matTooltip]="darkMode() ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'"
+            [attr.aria-label]="darkMode() ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'"
+            (click)="toggleTheme()"
+          >
+            <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
           <a class="btn btn-primary" routerLink="/add-ad">Dodaj ogłoszenie</a>
         </div>
       </div>
@@ -250,8 +292,10 @@ export class MainLayoutComponent implements OnInit {
   protected readonly favorites = inject(FavoritesService);
   protected readonly messagesService = inject(MessagesService);
   private readonly router = inject(Router);
+  private readonly theme = inject(ThemeService);
 
   protected readonly mobileOpen = signal(false);
+  protected readonly darkMode = this.theme.darkMode;
 
   ngOnInit(): void {
     this.messagesService.refreshUnreadCount();
@@ -271,6 +315,10 @@ export class MainLayoutComponent implements OnInit {
 
   closeMobileMenu(): void {
     this.mobileOpen.set(false);
+  }
+
+  toggleTheme(): void {
+    this.theme.toggle();
   }
 
   logout(event?: Event): void {

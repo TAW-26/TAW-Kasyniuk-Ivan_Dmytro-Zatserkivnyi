@@ -166,12 +166,18 @@ import { DecimalPipe } from '@angular/common';
         </div>
         @if (totalPages() > 1) {
           <div class="pagination">
-            <button mat-stroked-button [disabled]="currentPage() <= 1" (click)="changePage(currentPage() - 1)">
+            <button
+              mat-stroked-button
+              aria-label="Poprzednia strona"
+              [disabled]="currentPage() <= 1"
+              (click)="changePage(currentPage() - 1)"
+            >
               <mat-icon>chevron_left</mat-icon>
             </button>
             <span>Strona {{ currentPage() }} z {{ totalPages() }} ({{ total() | number }} ogłoszeń)</span>
             <button
               mat-stroked-button
+              aria-label="Następna strona"
               [disabled]="currentPage() >= totalPages()"
               (click)="changePage(currentPage() + 1)"
             >

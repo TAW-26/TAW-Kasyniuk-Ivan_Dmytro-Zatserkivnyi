@@ -33,7 +33,7 @@ import { ListingService } from '../../../core/services/listing.service';
       }
       .ad-status-sold {
         position: absolute;
-        top: 1rem;
+        bottom: 1rem;
         left: 1rem;
         background: var(--surface);
         color: var(--text);
@@ -44,6 +44,10 @@ import { ListingService } from '../../../core/services/listing.service';
         font-weight: 600;
         letter-spacing: 0.05em;
         text-transform: uppercase;
+      }
+      .listing-card.is-sold .ad-image img {
+        opacity: 0.6;
+        filter: grayscale(0.4);
       }
       :host-context(.is-new) .listing-card,
       .listing-card.is-new {
@@ -72,7 +76,7 @@ import { ListingService } from '../../../core/services/listing.service';
     `,
   ],
   template: `
-    <div class="listing-card" [class.is-new]="isNew()" (click)="open()">
+    <div class="listing-card" [class.is-new]="isNew()" [class.is-sold]="ad().status === 'sold'" (click)="open()">
       <div class="ad-image">
         @if (firstImage()) {
           <img [src]="firstImage()" [alt]="ad().title" />

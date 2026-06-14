@@ -58,4 +58,8 @@ export class ListingService {
   markAsSold(id: string): Observable<Listing> {
     return this.http.post<Listing>(`${this.baseUrl}/${id}/mark-sold`, {});
   }
+
+  markAsActive(id: string): Observable<Listing> {
+    return this.http.post<Listing>(`${this.baseUrl}/${id}/mark-active`, {});
+  }
 }

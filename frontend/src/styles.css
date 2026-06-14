@@ -795,7 +795,7 @@ label {
 
 .ad-date {
   font-size: 0.75rem;
-  color: var(--gray-400);
+  color: var(--gray-500);
   margin-top: 0.5rem;
 }
 
@@ -968,15 +968,6 @@ label {
   z-index: 2000;
   animation: slideIn 0.3s ease;
   box-shadow: var(--shadow-lg);
-}
-
-html,
-body {
-  height: 100%;
-}
-body {
-  margin: 0;
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
 
 .mat-mdc-form-field {
