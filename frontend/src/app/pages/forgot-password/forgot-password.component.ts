@@ -152,7 +152,6 @@ export class ForgotPasswordComponent {
       },
       error: () => {
         this.loading.set(false);
-        // Ta sama wiadomość co przy sukcesie, aby nie ujawniać istnienia konta.
         this.sent.set(true);
         this.message.set('Jeśli konto istnieje, link do resetu hasła został wysłany.');
       },

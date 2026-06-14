@@ -83,7 +83,6 @@ export class FavoritesService {
     }
   }
 
-  // Po zalogowaniu scala ulubione gościa (localStorage) z kontem, potem czyści lokalne.
   mergeGuestIntoAccount(): void {
     if (!this.auth.isLoggedIn()) return;
     const guest = this.loadLocal();

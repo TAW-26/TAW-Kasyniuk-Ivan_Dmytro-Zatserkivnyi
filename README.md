@@ -468,6 +468,8 @@ Przed wykonaniem skryptu sprawdź, czy `MONGO_URI` wskazuje właściwą bazę. O
 
 - [Diagram ERD](docs/ERD_DIAGRAM.png)
 - [Diagram Use Case](docs/Use_Case.png)
+- [Prezentacja projektu](docs/Bazarek-prezentacja.pptx)
+- [Scenariusz demonstracji](docs/prezentacja-demo-script.md)
 - [Instrukcja produkcyjna](docs/production.md)
 - [Dokumentacja API](docs/api.md)
 - [Dokumentacja monitoringu](docs/monitoring.md)

@@ -91,7 +91,6 @@ exports.getAll = async (req, res, next) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * limitNum;
 
-    // Telefon sprzedawcy widoczny tylko dla zalogowanych — chroni przed scrapingiem numerów.
     const userSelect = req.user ? POPULATE_USER_PUBLIC : POPULATE_USER_ANON;
     let query = Listing.find(filter)
       .populate('user_id', userSelect)
