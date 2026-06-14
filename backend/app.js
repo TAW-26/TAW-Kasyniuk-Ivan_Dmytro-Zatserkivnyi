@@ -20,6 +20,7 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:'],
@@ -39,8 +40,9 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4200')
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
+      // Nie rzucamy błędu dla obcego origin (to powodowałoby 500 m.in. dla
+      // własnych modułów <script type="module">). Po prostu nie dodajemy nagłówków CORS.
+      callback(null, !origin || allowedOrigins.includes(origin));
     },
     credentials: true,
   }),
